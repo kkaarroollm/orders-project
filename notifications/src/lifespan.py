@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI
 from redis.asyncio import Redis
 
-from common.logging.setup import setup_logging
+from src.common import setup_logging
 from src.database import connect_redis
 from src.repositories import NotificationRepository
 
