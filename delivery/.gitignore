@@ -1,7 +1,7 @@
 # Python-generated files
 __pycache__/
 *.py[oc]
-build/
+.venv/lib/python3.13/site-packages/pip/_internal/operations/build/
 dist/
 wheels/
 *.egg-info

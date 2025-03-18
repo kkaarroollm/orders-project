@@ -1,0 +1,112 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    command: ["mongod", "--replSet", "rs0", "--keyFile", "/etc/mongo-keyfile", "--bind_ip_all"]
+    healthcheck:
+      test: mongosh --host localhost:27017 --eval 'db.adminCommand("ping")' || exit 1
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
+    volumes:
+      - mongo_data:/data/db
+      - ./envs/mongo-keyfile:/etc/mongo-keyfile:ro
+    env_file:
+      - envs/mongo_db.env
+    networks:
+      - backend
+
+  mongo-init-replica:
+    image: mongo:latest
+    container_name: mongo-init-replica
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - envs/mongo_db.env
+    volumes:
+      - ./scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
+    entrypoint: [ "/docker-entrypoint-initdb.d/init-replica.sh" ]
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    env_file:
+      - envs/redis.env
+    networks:
+      - backend
+
+  notifications-service:
+    build:
+      context: notifications
+      target: development
+    container_name: notifications-service
+    working_dir: /app
+    env_file:
+      - envs/mongo_db.env
+      - envs/redis.env
+    volumes:
+      - ./notifications:/app
+    depends_on:
+      - mongo
+      - redis
+    ports:
+      - "8002:8002"
+    networks:
+      - backend
+
+  delivery-service:
+    build:
+      context: delivery
+      target: development
+    container_name: delivery-service
+    working_dir: /app
+    env_file:
+      - envs/mongo_db.env
+      - envs/redis.env
+    volumes:
+      - ./delivery:/app
+    depends_on:
+      - mongo
+      - redis
+    ports:
+      - "8001:8001"
+    networks:
+      - backend
+
+  order-service:
+    build:
+      context: orders
+      target: development
+    container_name: order-service
+    working_dir: /app
+    env_file:
+      - envs/mongo_db.env
+      - envs/redis.env
+    volumes:
+      - ./orders:/app
+    depends_on:
+      - mongo
+      - redis
+    ports:
+      - "8003:8003"
+    networks:
+      - backend
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  backend:
+    driver: bridge

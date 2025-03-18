@@ -1,0 +1,29 @@
+name: Python Linters
+
+on: [push, pull_request]
+
+jobs:
+  python-linters:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ["delivery", "notifications", "orders"]
+        task: ["ruff check", "mypy ."]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python environment
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "${{ matrix.service }}/uv.lock"
+
+      - name: Install dependencies for ${{ matrix.service }}
+        run: |
+          cd ${{ matrix.service }}
+          uv sync --all-extras --dev
+
+      - name: Run ${{ matrix.task }} in ${{ matrix.service }}
+        run: |
+          cd ${{ matrix.service }}
+          uv run ${{ matrix.task }}

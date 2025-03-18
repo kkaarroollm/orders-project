@@ -1,0 +1,25 @@
+version = 1
+disable_existing_loggers = false
+
+[formatters.json]
+"()" = "src.common.logging.json_formatter.JSONFormatter"
+
+[formatters.json.fmt_keys]
+level = "levelname"
+message = "message"
+timestamp = "timestamp"
+logger = "name"
+module = "module"
+function = "funcName"
+line = "lineno"
+thread_name = "threadName"
+
+[handlers.json_stdout]
+class = "logging.StreamHandler"
+level = "INFO"
+formatter = "json"
+stream = "ext://sys.stdout"
+
+[loggers.root]
+level = "INFO"
+handlers = ["json_stdout"]

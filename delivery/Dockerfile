@@ -13,12 +13,12 @@ COPY . .
 
 RUN uv sync --frozen --no-cache
 
-CMD ["uv", "run", "fastapi", "dev", "src/main.py", "--port", "8003", "--host", "0.0.0.0"]
+CMD ["uv", "run", "fastapi", "dev", "src/main.py", "--port", "8001", "--host", "0.0.0.0"]
 
 FROM base AS production
 
 COPY . .
 
-RUN uv sync --frozen --no-cache --no-dev
+RUN uv sync --frozen --no-cache
 
-CMD ["uv", "run", "fastapi", "run", "src/main.py", "--port", "8003", "--host", "0.0.0.0"]
+CMD ["uv", "run", "fastapi", "run", "src/main.py", "--port", "8001", "--host", "0.0.0.0"]
