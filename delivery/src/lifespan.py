@@ -14,7 +14,7 @@ async def startup(app: FastAPI) -> None:
     app.state.ready = False
     setup_logging()
 
-    mongo_client, db = await connect_mongo(os.getenv("MONGO_URL", "default"))  # type: tuple[AsyncIOMotorClient, AsyncIOMotorDatabase]
+    mongo_client, db = await connect_mongo(os.getenv("MONGO_URL", "default"))
     app.state.mongo_client = mongo_client
     app.state.db = db
 
