@@ -21,7 +21,7 @@ class OrderRepository:
         result = await self._collection.insert_one(doc)
         return str(result.inserted_id)
 
-    @with_mongodb_transaction(lambda self: self._client)
+    @with_mongodb_transaction(lambda self, *args, **kwargs: self._client)
     async def create_order_with_stock_check(
         self, order_data: OrderSchema, menu_repo: MenuItemRepository
     ) -> OrderResponse:
