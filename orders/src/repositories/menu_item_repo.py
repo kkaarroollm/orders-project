@@ -1,5 +1,3 @@
-import logging
-
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from redis.asyncio import Redis
