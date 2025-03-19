@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Annotated, List, Optional
 
@@ -45,7 +46,7 @@ class OrderSchema(BaseModel):
     id: Optional[StrObjectId] = Field(alias="_id", default=None)
     person: OrderingPersonSchema
     items: List[OrderedItemSchema]
-    total_price: float
+    total_price: Optional[Decimal] = Field(alias="total_price", default=Decimal(0))
     status: OrderStatus = OrderStatus.PENDING
     created_at: datetime = Field(default_factory=datetime.now)
 

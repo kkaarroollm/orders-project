@@ -25,7 +25,7 @@ def with_mongodb_transaction(
             async with await db_client.start_session() as session:
                 async with session.start_transaction():
                     try:
-                        return await func(*args, **kwargs)
+                        return await func(*args, session=session, **kwargs)
                     except Exception as e:
                         await session.abort_transaction()
                         raise e
