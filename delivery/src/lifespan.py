@@ -29,23 +29,26 @@ async def startup(app: FastAPI) -> None:
 
 
 async def teardown(app: FastAPI) -> None:
-    """Teardown sequence: Close DB connections & cleanup resources."""
+    """Gracefully cancel tasks and close DB connections."""
     app.state.ready = False
-    subscription_task = getattr(app.state, "subscription_task")
 
+    subscription_task = getattr(app.state, "subscription_task", None)
     if subscription_task and not subscription_task.done():
         subscription_task.cancel()
         try:
             await asyncio.wait_for(subscription_task, timeout=5)
-        except asyncio.TimeoutError:
-            logging.error("Subscription task did not finish in time.")
-        except asyncio.CancelledError:
-            logging.error("Subscription task was successfully cancelled.")
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            logging.warning(f"Subscription task cancelled: {subscription_task.cancelled()}")
 
-    if redis_client := getattr(app.state, "redis_client"):
+    delivery_repo = getattr(app.state, "delivery_repo", None)
+    logging.error(delivery_repo.active_tasks)
+    if delivery_repo and delivery_repo.active_tasks:
+        res = await asyncio.gather(*delivery_repo.active_tasks, return_exceptions=True)
+        logging.error(res)
+
+    if redis_client := getattr(app.state, "redis_client", None):
         await redis_client.close()
-
-    if mongo_client := getattr(app.state, "mongo_client"):
+    if mongo_client := getattr(app.state, "mongo_client", None):
         mongo_client.close()
 
-    logging.info("Delivery service is shut down.")
+    logging.info("Delivery service shut down.")

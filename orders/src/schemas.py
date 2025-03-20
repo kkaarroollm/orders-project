@@ -9,13 +9,9 @@ StrObjectId = Annotated[str, BeforeValidator(str)]
 
 
 class OrderStatus(str, Enum):
-    PENDING = "pending"
     CONFIRMED = "confirmed"
     PREPARING = "preparing"
     OUT_FOR_DELIVERY = "out_for_delivery"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
-
 
 class MenuItemSchema(BaseModel):
     id: Optional[StrObjectId] = Field(alias="_id", default=None)
@@ -47,7 +43,7 @@ class OrderSchema(BaseModel):
     person: OrderingPersonSchema
     items: List[OrderedItemSchema]
     total_price: Optional[Decimal] = Field(alias="total_price", default=Decimal(0))
-    status: OrderStatus = OrderStatus.PENDING
+    status: OrderStatus = OrderStatus.CONFIRMED
     created_at: datetime = Field(default_factory=datetime.now)
 
     class Config:
