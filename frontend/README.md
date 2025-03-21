@@ -9,7 +9,7 @@
 - **TypeScript**
 - **Tailwind CSS**
 - **shadcn/ui**
-- **Zod** 
+- **Zod**
 - **TanStack Query**
 - **TanStack Router**
 - **Framer Motion**
