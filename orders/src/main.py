@@ -27,7 +27,7 @@ app.include_router(health_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # TODO: go to env stages
+    allow_origins=["http://localhost:5173"],  # TODO: go to env stages
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

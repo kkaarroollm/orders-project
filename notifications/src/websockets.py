@@ -1,12 +1,13 @@
 import logging
+
 from fastapi import WebSocket
 
 
 class OrderStatusConnectionManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self._active_connections: dict[str, list[WebSocket]] = {}
 
-    async def connect(self, order_id: str, websocket: WebSocket):
+    async def connect(self, order_id: str, websocket: WebSocket) -> None:
         await websocket.accept()
 
         if order_id not in self._active_connections:
@@ -14,7 +15,7 @@ class OrderStatusConnectionManager:
         self._active_connections[order_id].append(websocket)
         logging.info(f"User connected for order {order_id}")
 
-    def disconnect(self, order_id: str, websocket: WebSocket):
+    def disconnect(self, order_id: str, websocket: WebSocket) -> None:
         if order_id in self._active_connections:
             self._active_connections[order_id].remove(websocket)
             if not self._active_connections[order_id]:
@@ -28,4 +29,4 @@ class OrderStatusConnectionManager:
         logging.info(f"Broadcast message to order {order_id}: {message}")
 
 
-ws_order_status_manager = OrderStatusConnectionManager()
+ws_order_status_manager: OrderStatusConnectionManager = OrderStatusConnectionManager()

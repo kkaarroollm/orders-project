@@ -33,4 +33,3 @@ def with_mongodb_transaction(
         return wrapper
 
     return decorator
-

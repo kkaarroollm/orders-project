@@ -13,6 +13,7 @@ class OrderStatus(str, Enum):
     PREPARING = "preparing"
     OUT_FOR_DELIVERY = "out_for_delivery"
 
+
 class MenuItemSchema(BaseModel):
     id: Optional[StrObjectId] = Field(alias="_id", default=None)
     name: str
@@ -44,6 +45,7 @@ class OrderSchema(BaseModel):
     items: List[OrderedItemSchema]
     total_price: Optional[Decimal] = Field(alias="total_price", default=Decimal(0))
     status: OrderStatus = OrderStatus.CONFIRMED
+    simulation: int = 1
     created_at: datetime = Field(default_factory=datetime.now)
 
     class Config:

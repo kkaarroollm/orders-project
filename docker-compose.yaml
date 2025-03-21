@@ -103,6 +103,23 @@ services:
     networks:
       - backend
 
+  order-simulator:
+    build:
+      context: simulator
+    container_name: order-simulator
+    working_dir: /app
+    volumes:
+      - ./simulator:/app
+    env_file:
+      - envs/redis.env
+      - envs/simulator.env
+    depends_on:
+      - order-service
+      - delivery-service
+      - notifications-service
+    networks:
+      - backend
+
 volumes:
   mongo_data:
   redis_data:

@@ -1,6 +1,7 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 from pydantic.fields import Field
-from datetime import datetime
 
 
 class CacheSchema(BaseModel):

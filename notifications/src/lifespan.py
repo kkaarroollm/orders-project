@@ -19,9 +19,8 @@ async def startup(app: FastAPI) -> None:
 
     app.state.notification_repo = NotificationRepository(redis_client=redis_client)
     app.state.subscription_task = asyncio.create_task(
-        app.state.notification_repo.subscribe_to_events("orders_channel", "delivery_channel")
+        app.state.notification_repo.subscribe_to_events("orders_stream", "deliveries_stream")
     )
-
     app.state.ready = True
 
 
