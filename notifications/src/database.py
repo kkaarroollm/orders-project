@@ -5,7 +5,7 @@ import redis.asyncio as aioredis
 
 async def connect_redis() -> aioredis.Redis:
     """Establish a connection to Redis."""
-    redis_client: aioredis.Redis = aioredis.from_url(os.getenv("REDIS_URL"), decode_responses=True)
+    redis_client: aioredis.Redis = aioredis.from_url(os.getenv("REDIS_URL"), decode_responses=True) # type: ignore
 
     try:
         await redis_client.ping()

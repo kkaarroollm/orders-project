@@ -1,4 +1,4 @@
-name: Python Linters
+name: Frontend Linters
 
 on: [push, pull_request]
 
