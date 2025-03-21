@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { OrderStatus } from '@/types.ts';
+import { NOTIFICATION_WS_URL } from '@/config/env';
 
 export function useOrderTracking(orderId: string) {
   const [status, setStatus] = useState<OrderStatus | null>(null);
@@ -8,7 +9,7 @@ export function useOrderTracking(orderId: string) {
     if (!orderId) return;
 
     const socket = new WebSocket(
-      `ws://localhost:8002/order-tracking/${orderId}/ws`,
+      `${NOTIFICATION_WS_URL}/order-tracking/${orderId}/ws`,
     );
 
     socket.onopen = () => console.log('WebSocket connected');
@@ -22,7 +23,6 @@ export function useOrderTracking(orderId: string) {
 
     return () => {
       if (socket.readyState === WebSocket.OPEN) {
-        console.log('🔌 Closing WebSocket');
         socket.close(1000, 'Client closed connection');
       }
     };

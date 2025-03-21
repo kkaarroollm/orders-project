@@ -1,6 +1,5 @@
 import useWebSocket from 'react-use-websocket';
-
-const NOTIFICATION_WS_URL = import.meta.env.VITE_WS_NOTIFICATIONS;
+import { NOTIFICATION_WS_URL } from '@/config/env';
 
 export const useNotifications = (onMessage: (msg: string) => void) => {
   useWebSocket(NOTIFICATION_WS_URL, {
