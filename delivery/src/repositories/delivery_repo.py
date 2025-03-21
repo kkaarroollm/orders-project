@@ -22,13 +22,9 @@ class DeliveryRepository:
         result = await self._collection.insert_one(doc)
         return str(result.inserted_id)
 
-    async def get_delivery(self, delivery_id: str) -> DeliverySchema:
-        delivery = await self._collection.find_one({"_id": ObjectId(delivery_id)})
-        return DeliverySchema(**delivery)
-
-    async def get_delivery_by_order_id(self, order_id: str) -> DeliverySchema:
+    async def get_delivery_by_order_id(self, order_id: str) -> DeliverySchema | None:
         delivery = await self._collection.find_one({"order_id": order_id})
-        return DeliverySchema(**delivery)
+        return DeliverySchema(**delivery) if delivery else None
 
     async def update_delivery_status(self, delivery_id: str, new_status: DeliveryStatus) -> bool:
         result = await self._collection.update_one(

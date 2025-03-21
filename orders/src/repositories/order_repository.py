@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from decimal import Decimal
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession, AsyncIOMotorCollection
@@ -20,17 +20,17 @@ class OrderRepository:
         self._collection = collection
         self._redis = redis_client
 
-    async def create_order(self, order_data: OrderSchema, session: AsyncIOMotorClientSession = None) -> str:
+    async def create_order(self, order_data: OrderSchema, session: Optional[AsyncIOMotorClientSession] = None) -> str:
         doc = order_data.model_dump(by_alias=True, exclude={"id"})
         result = await self._collection.insert_one(doc, session=session)
         return str(result.inserted_id)
 
-    async def get_order(self, order_id: str, session: AsyncIOMotorClientSession = None) -> OrderSchema | None:
+    async def get_order(self, order_id: str, session: Optional[AsyncIOMotorClientSession] = None) -> OrderSchema | None:
         if doc := await self._collection.find_one({"_id": ObjectId(order_id)}, session=session):
             return OrderSchema(**doc)
         return None
 
-    async def get_all_orders(self, session: AsyncIOMotorClientSession = None) -> list[OrderSchema]:
+    async def get_all_orders(self, session: Optional[AsyncIOMotorClientSession] = None) -> list[OrderSchema]:
         docs = await self._collection.find({}, session=session).to_list(length=1000)
         return [OrderSchema(**d) for d in docs]
 

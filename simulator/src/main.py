@@ -8,7 +8,7 @@ from src.utils import start_stream_worker
 
 
 async def connect_redis() -> Redis:
-    client = Redis.from_url(os.getenv("REDIS_URL"), decode_responses=True)
+    client: Redis = Redis.from_url(str(os.getenv("REDIS_URL", "redis")), decode_responses=True)
     if not await client.ping():
         raise ConnectionError("Could not connect to Redis")
     return client

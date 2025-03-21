@@ -15,12 +15,12 @@ class NotificationRepository:
 
     async def set_order_status(self, order_id: str, message: dict, *, expire: int = 86400) -> None:
         key = f"order:{order_id}:status"
-        await self._redis.hset(key, mapping=message)
+        await self._redis.hset(key, mapping=message)  # type: ignore[misc]
         await self._redis.expire(key, expire)
 
     async def get_order_status(self, order_id: str) -> dict[str, Any]:
         key = f"order:{order_id}:status"
-        result = await self._redis.hgetall(key)
+        result = await self._redis.hgetall(key)  # type: ignore[misc]
         return dict(result)
 
     async def get_last_stream_id(self, stream_name: str) -> str:
@@ -33,7 +33,7 @@ class NotificationRepository:
 
         while True:
             try:
-                if not (streams := await self._redis.xread(last_ids, block=block, count=count)):
+                if not (streams := await self._redis.xread(last_ids, block=block, count=count)):  # type: ignore
                     await asyncio.sleep(1)
                     continue
 

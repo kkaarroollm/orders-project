@@ -24,7 +24,7 @@ async def read_redis_stream(redis_client: Redis, block: int, count: int) -> Any:
     last_ids: dict[str, str] = await get_last_processed_ids(redis_client)
 
     try:
-        stream_data = await redis_client.xread(last_ids, block=block, count=count)
+        stream_data = await redis_client.xread(last_ids, block=block, count=count)  # type: ignore
         if stream_data:
             for stream_name, messages in stream_data:
                 await store_last_processed_id(redis_client, stream_name, messages[-1][0])
