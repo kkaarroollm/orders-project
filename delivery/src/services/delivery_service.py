@@ -30,7 +30,7 @@ class DeliveryService(IDeliveryService):
             logging.info(f"Simulating delivery for {delivery_id}")
 
     async def handle_status_update(self, status_data: dict) -> None:
-        if not (order_id := status_data.get("order_id")):
+        if not (order_id := status_data.get("order_id") or status_data.get("id")):
             raise ValueError("DeliveryService.handle_status_update: Missing order_id in status update")
 
         delivery = await self._repo.get_by_order_id(order_id)
