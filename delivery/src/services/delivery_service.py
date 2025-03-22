@@ -17,7 +17,7 @@ class DeliveryService(IDeliveryService):
         """Note: This is a mock implementation."""
         if order_data.get("status") != self.OUT_FOR_DELIVERY:
             logging.debug(f"Skipping order {order_data.get("id")}, status not '{self.OUT_FOR_DELIVERY}'")
-            return None
+            return
 
         delivery = DeliverySchema(order_id=order_data["id"])
         delivery_id = await self._repo.create(delivery)
