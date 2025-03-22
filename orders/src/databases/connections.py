@@ -1,14 +1,13 @@
 import logging
-import os
 
 import redis.asyncio as aioredis
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 
-async def connect_mongo(mongo_url: str) -> tuple[AsyncIOMotorClient, AsyncIOMotorDatabase]:
+async def connect_mongo(url: str, database: str) -> tuple[AsyncIOMotorClient, AsyncIOMotorDatabase]:
     """Establish a connection to MongoDB."""
-    mongo_client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_url)
-    db = mongo_client[os.getenv("MONGO_INITDB_DATABASE", "default")]
+    mongo_client: AsyncIOMotorClient = AsyncIOMotorClient(url)
+    db = mongo_client[database]
 
     try:
         await db.command("ping")
@@ -19,9 +18,9 @@ async def connect_mongo(mongo_url: str) -> tuple[AsyncIOMotorClient, AsyncIOMoto
     return mongo_client, db
 
 
-async def connect_redis() -> aioredis.Redis:
+async def connect_redis(url: str) -> aioredis.Redis:
     """Establish a connection to Redis."""
-    redis_client: aioredis.Redis = aioredis.from_url(os.getenv("REDIS_URL"), decode_responses=True)  # type: ignore
+    redis_client: aioredis.Redis = aioredis.from_url(url, decode_responses=True)  # type: ignore
 
     try:
         await redis_client.ping()

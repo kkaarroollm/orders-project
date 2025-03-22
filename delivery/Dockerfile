@@ -13,6 +13,8 @@ COPY . .
 
 RUN uv sync --frozen --no-cache
 
+EXPOSE 8001
+
 CMD ["uv", "run", "fastapi", "dev", "src/main.py", "--port", "8001", "--host", "0.0.0.0"]
 
 FROM base AS production
@@ -20,5 +22,7 @@ FROM base AS production
 COPY . .
 
 RUN uv sync --frozen --no-cache
+
+EXPOSE 8001
 
 CMD ["uv", "run", "fastapi", "run", "src/main.py", "--port", "8001", "--host", "0.0.0.0"]

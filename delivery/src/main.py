@@ -3,6 +3,7 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 
+from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import health_router
 
@@ -16,9 +17,9 @@ async def lifespan(app_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Delivery Service",
-    version="1.0.0",
-    contact={"name": "kkaarroollm", "email": "mkarol.4514@gmail.com"},  # noqa
+    title=settings.title,
+    version=settings.version,
+    contact={"name": settings.contact_name, "email": settings.contact_email},
     lifespan=lifespan,
 )
 

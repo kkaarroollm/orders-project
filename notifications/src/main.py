@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import health_router
 from src.websockets import ws_order_status_manager
@@ -19,15 +20,15 @@ async def lifespan(app_: FastAPI) -> AsyncGenerator:
 
 
 app = FastAPI(
-    title="Notifications Service",
-    version="1.0.0",
-    contact={"name": "kkaarroollm", "email": "mkarol.4514@gmail.com"},  # noqa
+    title=settings.title,
+    version=settings.version,
+    contact={"name": settings.contact_name, "email": settings.contact_email},  # noqa
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,7 +38,7 @@ app.add_middleware(
 @app.websocket("/order-tracking/{order_id}/ws")
 async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
     await ws_order_status_manager.connect(order_id, websocket)
-    notifications_repo = app.state.notification_repo
+    notifications_repo = app.state.notification_repository
 
     if status := await notifications_repo.get_order_status(order_id):
         try:

@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Annotated, List, Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, field_serializer
 
 StrObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -43,10 +43,14 @@ class OrderSchema(BaseModel):
     id: Optional[StrObjectId] = Field(alias="_id", default=None)
     person: OrderingPersonSchema
     items: List[OrderedItemSchema]
-    total_price: Optional[Decimal] = Field(alias="total_price", default=Decimal(0))
+    total_price: Optional[Decimal] = Field(default=None)
     status: OrderStatus = OrderStatus.CONFIRMED
     simulation: int = 1
     created_at: datetime = Field(default_factory=datetime.now)
+
+    @field_serializer("total_price", when_used="json")
+    def serialize_total_price(self, value: Decimal) -> float:
+        return float(value)
 
     class Config:
         populate_by_name = True

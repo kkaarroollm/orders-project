@@ -2,8 +2,10 @@ import logging
 
 from fastapi import WebSocket
 
+from src.interfaces import IOrderStatusConnectionManager
 
-class OrderStatusConnectionManager:
+
+class OrderStatusConnectionManager(IOrderStatusConnectionManager):
     def __init__(self) -> None:
         self._active_connections: dict[str, list[WebSocket]] = {}
 

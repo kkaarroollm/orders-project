@@ -1,42 +1,31 @@
-import asyncio
 import logging
 
 from fastapi import FastAPI
-from redis.asyncio import Redis
 
 from src.common import setup_logging
-from src.database import connect_redis
-from src.repositories import NotificationRepository
+from src.database import close_redis, setup_redis
+from src.repositories import setup_repository
+from src.services import setup_services
+from src.streams import setup_streams, stop_streams
 
 
 async def startup(app: FastAPI) -> None:
     """Startup sequence: Connect to Redis & initialize resources."""
     app.state.ready = False
     setup_logging()
+    await setup_redis(app)
+    await setup_repository(app)
+    await setup_services(app)
+    await setup_streams(app)
 
-    redis_client: Redis = await connect_redis()
-    app.state.redis_client = redis_client
-
-    app.state.notification_repo = NotificationRepository(redis_client=redis_client)
-    app.state.subscription_task = asyncio.create_task(
-        app.state.notification_repo.subscribe_to_events("orders_stream", "deliveries_stream")
-    )
     app.state.ready = True
+    logging.info("Notification service is ready.")
 
 
 async def teardown(app: FastAPI) -> None:
     """Teardown sequence: Cancel subscriptions & close Redis connection."""
     app.state.ready = False
+    await stop_streams(app)
+    await close_redis(app)
 
-    subscription_task = getattr(app.state, "subscription_task", None)
-    if subscription_task and not subscription_task.done():
-        subscription_task.cancel()
-        try:
-            await asyncio.wait_for(subscription_task, timeout=5)
-        except asyncio.TimeoutError:
-            logging.error("Subscription task did not finish in time.")
-        except asyncio.CancelledError:
-            logging.error("Subscription task was successfully cancelled.")
-
-    if redis_client := getattr(app.state, "redis_client"):
-        await redis_client.close()
+    logging.info("Notification service shut down.")

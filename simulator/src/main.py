@@ -1,14 +1,14 @@
 import asyncio
 import logging
-import os
 
 from redis.asyncio import Redis
 
-from src.utils import start_stream_worker
+from src.config import settings
+from src.streams import start_streams
 
 
-async def connect_redis() -> Redis:
-    client: Redis = Redis.from_url(str(os.getenv("REDIS_URL", "redis")), decode_responses=True)
+async def connect_redis(url: str) -> Redis:
+    client: Redis = Redis.from_url(url, decode_responses=True)
     if not await client.ping():
         raise ConnectionError("Could not connect to Redis")
     return client
@@ -16,11 +16,11 @@ async def connect_redis() -> Redis:
 
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
-    redis_client = await connect_redis()
+    redis = await connect_redis(settings.redis_url)
     try:
-        await start_stream_worker(redis_client)
+        await start_streams(redis)
     finally:
-        await redis_client.close()
+        await redis.close()
 
 
 if __name__ == "__main__":

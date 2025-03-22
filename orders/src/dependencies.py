@@ -1,14 +1,12 @@
 from fastapi import Request
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.repositories import MenuItemRepository, OrderRepository
-
-
-def get_order_repo(request: Request) -> OrderRepository:
-    return request.app.state.orders_repo  # type: ignore
+from src.services.menu_service import MenuService
+from src.services.order_service import OrderService
 
 
-def get_menu_repo(request: Request) -> MenuItemRepository:
-    db: AsyncIOMotorDatabase = request.app.state.db
-    collection = db.get_collection("menu_items")
-    return MenuItemRepository(collection=collection, redis_client=request.app.state.redis_client)
+def get_menu_service(request: Request) -> MenuService:
+    return request.app.state.menu_service  # type: ignore
+
+
+def get_order_service(request: Request) -> OrderService:
+    return request.app.state.order_service  # type: ignore

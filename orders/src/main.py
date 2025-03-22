@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import health_router, router
 
@@ -17,9 +18,9 @@ async def lifespan(app_: FastAPI) -> AsyncGenerator:
 
 
 app = FastAPI(
-    title="Orders Service",
-    version="1.0.0",
-    contact={"name": "kkaarroollm", "email": "mkarol.4514@gmail.com"},  # noqa
+    title=settings.title,
+    version=settings.version,
+    contact={"name": settings.contact_name, "email": settings.contact_email},  # noqa
     lifespan=lifespan,
 )
 app.include_router(router)
@@ -27,7 +28,7 @@ app.include_router(health_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # TODO: go to env stages
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
