@@ -3,8 +3,7 @@
 ---
 ### **Services Flow Draft:** <br>
 ### **DEPRECATED FLOW** <br>
-![orders-project.png](assets/orders-project.png)
-
+![diagram-1x.png](assets/diagram-1x.png)
 ---
 
 ### TODO:
