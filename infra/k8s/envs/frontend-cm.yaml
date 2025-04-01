@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: frontend
+data:
+  VITE_API_ORDERS: "http://orders-svc.backend:8003"
+  VITE_API_NOTIFICATIONS_WS: "ws://notifications-svc.backend:8002"

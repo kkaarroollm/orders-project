@@ -2,17 +2,16 @@ FROM node:20.19.0-alpine AS development
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
 RUN npm install
 
 COPY . .
 
-RUN npm run build
+ARG VITE_ENV=production
+RUN npm run build -- --mode $VITE_ENV
 
 FROM nginx:latest AS production
-
-EXPOSE 3000
 
 COPY --from=development /app/dist /usr/share/nginx/html
 

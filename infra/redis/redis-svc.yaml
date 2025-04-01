@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-svc
+  namespace: databases
+  labels:
+    database: redis
+spec:
+  clusterIP: None
+  selector:
+    database: redis
+  ports:
+    - port: 6379
+      targetPort: 6379

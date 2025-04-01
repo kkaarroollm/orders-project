@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: databases
+  labels:
+    database: mongodb
+spec:
+  serviceName: mongodb-svc
+  replicas: 3
+  selector:
+    matchLabels:
+      database: mongodb
+  template:
+    metadata:
+      labels:
+        database: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:latest
+          command:
+           - mongod
+           - "--replSet"
+           - rs0
+           - "--bind_ip_all"
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-storage
+              mountPath: /data/db
+            - name: mongodb-keyfile
+              mountPath: /etc/keyfile
+              readOnly: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: mongodb-keyfile
+          secret:
+            secretName: mongodb-keyfile
+            defaultMode: 0400
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi

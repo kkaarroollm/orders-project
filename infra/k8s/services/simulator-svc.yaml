@@ -1,0 +1,13 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: simulator-svc
+  namespace: backend
+spec:
+  selector:
+    app: smiulator 
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8001
