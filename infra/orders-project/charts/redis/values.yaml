@@ -1,0 +1,14 @@
+replicaCount: 1
+image:
+  repository: redis
+  tag: latest
+  pullPolicy: IfNotPresent
+
+persistence:
+  size: 1Gi
+
+resources: {}
+
+service:
+  name: redis-svc
+  port: 6379

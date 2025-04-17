@@ -1,0 +1,53 @@
+namespace: prod
+
+global:
+  fullnameOverride: orders-project
+  mongo:
+    username: root
+    password: SuperSecretMongoPassword123
+    port: "27017"
+    host: mongo-svc
+    database: food-delivery
+
+  redis:
+    password: RedisPasswordSuperSecret321
+    port: "6379"
+    host: redis-svc
+
+ingress-nginx:
+  enabled: true
+  controller:
+    ingressClassResource:
+      enabled: false
+    ingressClass: nginx
+
+ingress:
+  enabled: true
+  host: frontend.localhost
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true"
+
+  # Override default rules with
+  # rules:
+
+  defaultRules:
+    - path: /api/v1/orders(/|$)(.*)
+      service: orders-project-orders-svc
+      port: 8003
+
+    - path: /api/v1/menu(/|$)(.*)
+      service: orders-project-orders-svc
+      port: 8003
+
+    - path: /api/v1/order-tracking/.*/ws
+      service: orders-project-notifications-svc
+      port: 8002
+
+    - path: /.*
+      service: orders-project-frontend-svc
+      port: 80
+
+  # Add TLS configuration also
+

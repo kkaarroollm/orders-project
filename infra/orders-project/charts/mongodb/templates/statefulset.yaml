@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.global.fullnameOverride  }}-mongo
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "orders-project.labels" . | nindent 4 }}
+    database: mongo
+spec:
+  serviceName: {{ .Values.global.fullnameOverride  }}-mongo-svc
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodb
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          command:
+           - mongod
+           - "--replSet"
+           - rs0
+           - "--bind_ip_all"
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          volumeMounts:
+            - name: mongodb-storage
+              mountPath: /data/db
+            - name: mongodb-keyfile
+              mountPath: /etc/keyfile
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: mongodb-keyfile
+          secret:
+            secretName: {{ .Values.global.fullnameOverride  }}-mongo-keyfile
+            defaultMode: 0400
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}

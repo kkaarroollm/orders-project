@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.global.fullnameOverride  }}-redis-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "orders-project.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    app: redis
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}

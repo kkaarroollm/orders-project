@@ -1,0 +1,10 @@
+apiVersion: v2
+name: mongodb
+description: A MongoDB StatefulSet chart used as a sub-chart for data persistence
+type: application
+version: 0.1.0
+appVersion: "6.0.5"
+maintainers:
+  - name: karol marszalek
+    email: mkarol.4514@gmail.com
+    url: https://www.github.com/kkaarroollm

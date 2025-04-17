@@ -1,0 +1,10 @@
+apiVersion: v2
+name: orders
+description: Orders microservice chart for backend
+version: 0.1.0
+appVersion: "1.0.0"
+type: application
+maintainers:
+  - name: karol marszalek
+    email: mkarol.4514@gmail.com
+    url: https://www.github.com/kkaarroollm

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: redis
+description: A Redis sub-chart for caching purposes
+type: application
+version: 0.1.0
+appVersion: "7.0"
+maintainers:
+  - name: karol marszalek
+    email: mkarol.4514@gmail.com
+    url: https://www.github.com/kkaarroollm

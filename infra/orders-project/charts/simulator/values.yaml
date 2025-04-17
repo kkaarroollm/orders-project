@@ -1,0 +1,17 @@
+replicaCount: 1
+image:
+  repository: kkaarroollm/simulator-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+containerPort: 8001
+service:
+  port: 80
+
+resources: {}
+
+simulator:
+  orderConfirmingDelay: "20"
+  orderPreparingDelay: "200"
+  deliveryWaitingDelay: "40"
+  deliveryWayDelay: "20"

@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-mongo-init-rs
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mongo-rs-init
+          image: mongo:latest
+          command:
+            - bash
+            - -c
+            - |
+              echo "=================================="
+              echo "Waiting for MongoDB to be ready..."
+              echo "=================================="
+
+              until mongosh --host {{ .Values.global.fullnameOverride }}-mongo-0.{{ .Values.global.fullnameOverride }}-mongo-svc --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+                echo "Waiting for {{ .Values.global.fullnameOverride }}-mongo-0..."
+                sleep 2
+              done
+
+              echo "========================"
+              echo "Initiating ReplicaSet..."
+              echo "========================"
+
+              mongosh --host {{ .Values.global.fullnameOverride }}-mongo-0.{{ .Values.global.fullnameOverride }}-mongo-svc --eval '
+                try {
+                  rs.initiate({
+                    _id: "rs0",
+                    members: [
+                      { _id: 0, host: "{{ .Values.global.fullnameOverride }}-mongo-0.{{ .Values.global.fullnameOverride }}-mongo-svc:27017", priority: 2 },
+                      { _id: 1, host: "{{ .Values.global.fullnameOverride }}-mongo-1.{{ .Values.global.fullnameOverride }}-mongo-svc:27017", priority: 1 },
+                      { _id: 2, host: "{{ .Values.global.fullnameOverride }}-mongo-2.{{ .Values.global.fullnameOverride }}-mongo-svc:27017", priority: 1 }
+                    ]
+                  });
+                  print("ReplicaSet initiated");
+                } catch(e) {
+                  if (e.codeName === "AlreadyInitialized" || e.code === 23) {
+                    print("ReplicaSet already initialized");
+                  } else {
+                    print("Unexpected error: " + e);
+                    quit(1);
+                  }
+                }'

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-simulator-config
+  namespace: {{ .Release.Namespace }}
+data:
+  ORDER_CONFIRMING_DELAY: "{{ .Values.simulator.orderConfirmingDelay }}"
+  ORDER_PREPARING_DELAY: "{{ .Values.simulator.orderPreparingDelay }}"
+  DELIVERY_WAITING_DELAY: "{{ .Values.simulator.deliveryWaitingDelay }}"
+  DELIVERY_WAY_DELAY: "{{ .Values.simulator.deliveryWayDelay }}"

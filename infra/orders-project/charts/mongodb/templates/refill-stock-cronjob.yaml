@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-stock-refill
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 */2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: mongo-stock-refill
+              image: mongo:latest
+              command:
+                - bash
+                - -c
+                - |
+                  echo "[REFILL] Checking stock levels..."
+                  mongosh --host {{ .Values.global.fullnameOverride }}-mongo-0.{{ .Values.global.fullnameOverride }}-mongo-svc \
+                    --eval '
+                      const db = db.getSiblingDB("food-delivery");
+                      const items = db.menu_items.find({ stock: { $lt: 200 } }).toArray();
+                      items.forEach(item => {
+                        db.menu_items.updateOne(
+                          { _id: item._id },
+                          { $set: { stock: 200 } }
+                        );
+                        print(`Updated ${item.name} stock to 200`);
+                      });
+                    '
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.global.fullnameOverride }}-mongo-auth
+                - configMapRef:
+                    name: {{ .Values.global.fullnameOverride }}-mongo-config

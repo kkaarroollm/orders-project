@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-mongo-load-initial-data
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: load-initial-products
+          image: mongo:latest
+          command:
+            - bash
+            - -c
+            - |
+              echo "Loading initial dummy products into MongoDB..."
+              mongosh --host {{ .Values.global.fullnameOverride }}-mongo-0.{{ .Values.global.fullnameOverride }}-mongo-svc \
+                --eval '
+                  const db = db.getSiblingDB("food-delivery");
+                  db.menu_items.insertMany([
+                    {
+                      name: "Margherita",
+                      category: "Pizza",
+                      description: "Classic Margherita with tomato and basil",
+                      price: 25.99,
+                      stock: 100
+                    },
+                    {
+                      name: "Pepperoni",
+                      category: "Pizza",
+                      description: "Spicy pepperoni with mozzarella",
+                      price: 28.50,
+                      stock: 100
+                    },
+                    {
+                      name: "Coca-Cola",
+                      category: "Drinks",
+                      description: "Chilled Coca-Cola 0.5L",
+                      price: 5.00,
+                      stock: 100
+                    },
+                    {
+                      name: "Lava Cake",
+                      category: "Desserts",
+                      description: "Warm chocolate cake with molten center",
+                      price: 15.90,
+                      stock: 100
+                    }
+                  ]);
+                  print("Dummy products loaded successfully.");
+                '
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.fullnameOverride }}-mongo-auth
+            - configMapRef:
+                name: {{ .Values.global.fullnameOverride }}-mongo-config

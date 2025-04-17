@@ -1,0 +1,11 @@
+replicaCount: 3
+image:
+  repository: kkaarroollm/orders-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+containerPort: 8003
+service:
+  port: 80
+
+resources: {}
