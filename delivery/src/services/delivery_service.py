@@ -16,7 +16,7 @@ class DeliveryService(IDeliveryService):
     async def handle_order(self, order_data: dict) -> None:
         """Note: This is a mock implementation."""
         if order_data.get("status") != self.OUT_FOR_DELIVERY:
-            logging.debug(f"Skipping order {order_data.get("id")}, status not '{self.OUT_FOR_DELIVERY}'")
+            logging.info(f"Skipping order {order_data.get("id")}, status not '{self.OUT_FOR_DELIVERY}'")
             return
 
         delivery = DeliverySchema(order_id=order_data["id"])

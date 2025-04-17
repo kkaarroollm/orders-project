@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: mongodb-auth
-  namespace: backend 
-data:
-  MONGO_INITDB_ROOT_PASSWORD: U3VwZXJTZWNyZXRNb25nb1Bhc3N3b3JkMTIz
-  MONGO_INITDB_ROOT_USERNAME: U3VwZXJTZWNyZXRNb25nb1Jvb3RVc2Vy 

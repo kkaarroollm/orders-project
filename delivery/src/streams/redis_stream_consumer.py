@@ -38,7 +38,7 @@ class RedisStreamConsumer(IRedisStreamConsumer):
                         payload = json.loads(message_data["data"])
                         await handler(payload)
                         await self._redis.xack(self._stream, self._group, message_id)
-                        logging.debug(
+                        logging.info(
                             f"ACKed message({message_id}) from a group({self._group}) in a stream({self._stream})"
                         )
                     except Exception as e:

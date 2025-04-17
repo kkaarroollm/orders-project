@@ -13,6 +13,6 @@ class RedisStreamPublisher(IRedisStreamPublisher):
     async def publish(self, stream: str, data: dict) -> None:
         try:
             await self._redis.xadd(stream, {"data": json.dumps(data)})
-            logging.debug(f"Published to stream `{stream}`: {data}")
+            logging.info(f"Published to stream `{stream}`: {data}")
         except Exception as e:
             logging.error(f"Failed to publish to Redis stream `{stream}`: {e}")
