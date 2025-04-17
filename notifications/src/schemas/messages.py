@@ -4,9 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from src.schemas.order import OrderSchema, OrderStatus
-
 from src.schemas.delivery import DeliveryStatus
+from src.schemas.order import OrderSchema, OrderStatus
 
 
 class EventType(str, Enum):

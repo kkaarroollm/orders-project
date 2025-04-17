@@ -13,7 +13,7 @@ class IDeliveryRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_order_id(self, order_id: str) ->Optional[DeliverySchema]:
+    async def get_by_order_id(self, order_id: str) -> Optional[DeliverySchema]:
         """Get delivery document by order_id"""
         ...
 
