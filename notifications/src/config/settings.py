@@ -1,8 +1,22 @@
-from pydantic_settings import BaseSettings
+from enum import Enum
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class EnvironmentEnum(str, Enum):
+    PRODUCTION = "PRODUCTION"
+    DEVELOPMENT = "DEVELOPMENT"
+
+    def docs_available(self):
+        show_docs_environments = {EnvironmentEnum.DEVELOPMENT}
+        return self in show_docs_environments
 
 
 class Settings(BaseSettings):
-    environment: str = "development"
+    environment: EnvironmentEnum = EnvironmentEnum.DEVELOPMENT
+    debug: bool = False
+
     title: str = "Notification Service"
     version: str = "1.0.0"
     contact_name: str = "kkaarroollm"  # noqa
@@ -10,15 +24,30 @@ class Settings(BaseSettings):
 
     redis_host: str = "localhost"
     redis_port: int = 6379
-    redis_url: str = f"redis://{redis_host}:{redis_port}"
+    redis_url: str = f"redis://localhost:6379"
 
     orders_stream: str = "orders-stream"
     deliveries_stream: str = "deliveries-stream"
 
     notifications_group: str = "notifications-group"
 
-    class Config:
-        env_file = ".env"
+    cors_allow_credentials: bool = False
+    cors_allow_origins: list[str] = []
+    cors_allow_methods: list[str] = []
+    cors_allow_headers: list[str] = []
+    allowed_hosts: list[str] = []
+
+    @model_validator(mode="after")
+    def setup_dynamic(self):
+        if self.debug:
+            self.cors_allow_origins = ["*"]
+            self.cors_allow_methods = ["*"]
+            self.cors_allow_headers = ["*"]
+            self.allowed_hosts = ["*"]
+        self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
+        return self
+
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()

@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     cors_allow_origins: list[str] = []
     cors_allow_methods: list[str] = []
     cors_allow_headers: list[str] = []
+    allowed_hosts: list[str] = []
 
     @model_validator(mode="after")
     def setup_dynamic_settings(self):
@@ -49,6 +50,7 @@ class Settings(BaseSettings):
             self.cors_allow_origins = ["*"]
             self.cors_allow_methods = ["*"]
             self.cors_allow_headers = ["*"]
+            self.allowed_hosts = ["*"]
         self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
         return self
 
