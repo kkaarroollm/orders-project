@@ -24,6 +24,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ .Values.global.fullnameOverride }}-redis-config
+            - configMapRef:
+                name: {{ .Values.global.fullnameOverride }}-notifications-config
           env:
             - name: REDIS_PASSWORD
               valueFrom:

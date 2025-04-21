@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-delivery-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  ENVIRONMENT: "{{ .Values.environment }}"
+  DEBUG: "{{ .Values.debug }}"

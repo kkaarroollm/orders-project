@@ -17,9 +17,12 @@ global:
 ingress-nginx:
   enabled: true
   controller:
+    config:
+      use-forwarded-headers: true
     ingressClassResource:
       enabled: false
     ingressClass: nginx
+
 
 ingress:
   enabled: true
@@ -29,25 +32,13 @@ ingress:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/use-regex: "true"
 
-  # Override default rules with
-  # rules:
-
-  defaultRules:
-    - path: /api/v1/orders(/|$)(.*)
-      service: orders-project-orders-svc
-      port: 8003
-
-    - path: /api/v1/menu(/|$)(.*)
-      service: orders-project-orders-svc
-      port: 8003
-
-    - path: /api/v1/order-tracking/.*/ws
-      service: orders-project-notifications-svc
-      port: 8002
-
-    - path: /.*
-      service: orders-project-frontend-svc
-      port: 80
 
   # Add TLS configuration also
 
+#### ADD TLS CONFIG TO INJECT INGRESS
+  # tls:
+  #   - secretName: frontend.localhost-tls
+  #     hosts:
+  #       - frontend.localhost
+
+#### ADD CONFIG MAP INGRESS ADDITIONAL DATA

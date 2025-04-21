@@ -26,6 +26,8 @@ spec:
                 name: {{ .Values.global.fullnameOverride }}-redis-config
             - configMapRef:
                 name: {{ .Values.global.fullnameOverride }}-mongo-config
+            - configMapRef:
+                name: {{ .Values.global.fullnameOverride }}-delivery-config
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               valueFrom:

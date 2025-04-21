@@ -1,0 +1,26 @@
+replicaCount: 3
+image:
+  repository: kkaarroollm/orders-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+containerPort: 8003
+service:
+  port: 80
+
+resources: {}
+
+environment: PRODUCTION
+debug: false
+
+cors:
+  allowOrigins:
+    - https://orders.karolmarszalek.me
+  allowMethods:
+    - GET
+    - POST
+  allowHeaders:
+    - "*"
+
+allowedHosts:
+  - orders.karolmarszalek.me

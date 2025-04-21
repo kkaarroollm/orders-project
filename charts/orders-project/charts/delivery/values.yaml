@@ -9,3 +9,6 @@ service:
   port: 80
 
 resources: {}
+
+environment: PRODUCTION
+debug: false

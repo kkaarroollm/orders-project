@@ -1,0 +1,25 @@
+replicaCount: 3
+image:
+  repository: kkaarroollm/notifications-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+containerPort: 8002
+service:
+  port: 80
+
+resources: {}
+
+environment: PRODUCTION
+debug: false
+
+cors:
+  allowOrigins:
+    - https://orders.karolmarszalek.me
+  allowMethods:
+    - GET
+  allowHeaders:
+    - "*"
+
+allowedHosts:
+  - orders.karolmarszalek.me
