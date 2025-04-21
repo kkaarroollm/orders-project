@@ -2,7 +2,7 @@ replicaCount: 3
 image:
   repository: kkaarroollm/orders-service
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 containerPort: 8003
 service:
@@ -24,3 +24,6 @@ cors:
 
 allowedHosts:
   - orders.karolmarszalek.me
+
+livenessProbeUrl: api/v1/health/liveness
+readinessProbeUrl: api/v1/health/readiness
