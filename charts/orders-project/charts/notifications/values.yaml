@@ -23,3 +23,6 @@ cors:
 
 allowedHosts:
   - orders.karolmarszalek.me
+
+livenessProbeUrl: api/v1/health/liveness
+readinessProbeUrl: api/v1/health/readiness

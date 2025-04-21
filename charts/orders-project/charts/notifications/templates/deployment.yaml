@@ -36,7 +36,7 @@ spec:
               value: redis://:$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)
           startupProbe:
             httpGet:
-              path: /health/readiness
+              path: {{ .Values.readinessProbeUrl }}
               port: {{ .Values.containerPort }}
               scheme: HTTP
             initialDelaySeconds: 15
@@ -44,7 +44,7 @@ spec:
             failureThreshold: 20
           readinessProbe:
             httpGet:
-              path: /health/readiness
+              path: {{ .Values.readinessProbeUrl }}
               port: {{ .Values.containerPort }}
               scheme: HTTP
             initialDelaySeconds: 5
@@ -52,7 +52,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /health/liveness
+              path: {{ .Values.livenessProbeUrl }}
               port: {{ .Values.containerPort }}
               scheme: HTTP
             initialDelaySeconds: 5

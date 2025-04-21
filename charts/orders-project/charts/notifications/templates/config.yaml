@@ -6,14 +6,9 @@ metadata:
   labels:
     app: {{ .Chart.Name }}
 data:
-  ENVIRONMENT: "{{ .Values.environment }}"
-  DEBUG: "{{ .Values.debug }}"
-
-  CORS_ALLOW_ORIGINS: |
-    {{- toJson .Values.cors.allowOrigins | indent 4 }}
-  CORS_ALLOW_METHODS: |
-    {{- toJson .Values.cors.allowMethods | indent 4 }}
-  CORS_ALLOW_HEADERS: |
-    {{- toJson .Values.cors.allowHeaders | indent 4 }}
-  ALLOWED_HOSTS: |
-    {{- toJson .Values.allowedHosts | indent 4 }}
+  ENVIRONMENT: {{ .Values.environment | quote }}
+  DEBUG: {{ .Values.debug | quote }}
+  CORS_ALLOW_ORIGINS: {{ .Values.cors.allowOrigins | toJson | quote }}
+  CORS_ALLOW_METHODS: {{ .Values.cors.allowMethods | toJson | quote }}
+  CORS_ALLOW_HEADERS: {{ .Values.cors.allowHeaders | toJson | quote }}
+  ALLOWED_HOSTS: {{ .Values.allowedHosts | toJson | quote }}
