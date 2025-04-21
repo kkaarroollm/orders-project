@@ -1,8 +1,21 @@
-from pydantic_settings import BaseSettings
+from enum import Enum
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class EnvironmentEnum(str, Enum):
+    PRODUCTION = "PRODUCTION"
+    DEVELOPMENT = "DEVELOPMENT"
+
+    def docs_available(self):
+        show_docs_environments = {EnvironmentEnum.DEVELOPMENT}
+        return self in show_docs_environments
 
 
 class Settings(BaseSettings):
-    environment: str = "development"
+    environment: EnvironmentEnum = EnvironmentEnum.DEVELOPMENT
+    debug: bool = False
+
     title: str = "Delivery Service"
     version: str = "1.0.0"
     contact_name: str = "kkaarroollm"  # noqa
@@ -22,8 +35,7 @@ class Settings(BaseSettings):
     delivery_status_stream: str = "delivery-status-stream"
     delivery_group: str = "delivery-group"
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()

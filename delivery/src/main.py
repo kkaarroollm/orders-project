@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from src.config import settings
 from src.lifespan import startup, teardown
-from src.routes import health_router
+from src.routes import router
 
 
 @asynccontextmanager
@@ -23,4 +23,4 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(health_router)
+app.include_router(router)
