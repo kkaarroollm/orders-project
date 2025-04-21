@@ -17,4 +17,4 @@ async def close_databases(app: FastAPI) -> None:
         mongo.close()
 
 
-__all__ = ["setup_databases", "close_databases"]
+__all__ = ["setup_databases", "close_databases", "MongoDBTransactionManager"]

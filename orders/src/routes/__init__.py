@@ -7,3 +7,4 @@ from src.routes.orders import router as orders_router
 router = APIRouter(prefix="/api/v1")
 router.include_router(menu_router)
 router.include_router(orders_router)
+router.include_router(health_router)
