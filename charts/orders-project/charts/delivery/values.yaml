@@ -12,3 +12,6 @@ resources: {}
 
 environment: PRODUCTION
 debug: false
+
+livenessProbeUrl: api/v1/health/liveness
+readinessProbeUrl: api/v1/health/readiness

@@ -50,7 +50,7 @@ spec:
               value: mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@$(MONGO_HOST):$(MONGO_PORT)
           startupProbe:
             httpGet:
-              path: /health/readiness
+              path: {{ .Values.readinessProbeUrl }}
               port: {{ .Values.containerPort }}
               scheme: HTTP
             initialDelaySeconds: 15
@@ -58,7 +58,7 @@ spec:
             failureThreshold: 20
           readinessProbe:
             httpGet:
-              path: /health/readiness
+              path: {{ .Values.readinessProbeUrl }}
               port: {{ .Values.containerPort }}
               scheme: HTTP
             initialDelaySeconds: 5
@@ -66,7 +66,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /health/liveness
+              path: {{ .Values.livenessProbeUrl }}
               port: {{ .Values.containerPort }}
               scheme: HTTP
             initialDelaySeconds: 5
