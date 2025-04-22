@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
-    redis_url: str = f"redis://localhost:6379"
+    redis_url: str = ""
 
     simulate_order_stream: str = "simulate-order-stream"
     simulate_delivery_stream: str = "simulate-delivery-stream"
@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     @model_validator(mode="after")
-    def setup_dynamic_settings(self):
-        self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
+    def setup_dynamic_settings(self) -> "Settings":
+        if not self.redis_url:
+            self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
         return self
 
 
