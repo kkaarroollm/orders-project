@@ -8,7 +8,7 @@ class EnvironmentEnum(str, Enum):
     PRODUCTION = "PRODUCTION"
     DEVELOPMENT = "DEVELOPMENT"
 
-    def docs_available(self):
+    def docs_available(self) -> bool:
         show_docs_environments = {EnvironmentEnum.DEVELOPMENT}
         return self in show_docs_environments
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     redis_host: str = "localhost"
     redis_port: int = 6379
-    redis_url: str = f"redis://localhost:6379"
+    redis_url: str = ""
 
     orders_stream: str = "orders-stream"
     deliveries_stream: str = "deliveries-stream"
@@ -39,8 +39,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     @model_validator(mode="after")
-    def setup_dynamic_settings(self):
-        self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
+    def setup_dynamic_settings(self) -> "Settings":
+        if not self.redis_url:
+            self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
         return self
 
 
