@@ -1,24 +1,13 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from src.config import EnvironmentEnum, settings
+from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import router
-
-app_config = {
-    "title": settings.title,
-    "version": settings.version,
-    "contact": {"name": settings.contact_name, "email": settings.contact_email},
-}
-
-if not settings.environment.docs_available():
-    app_config["openapi_url"] = None
 
 
 @asynccontextmanager
@@ -29,13 +18,18 @@ async def lifespan(app_: FastAPI) -> AsyncGenerator:
     await teardown(app_)
 
 
-app = FastAPI(**app_config, lifespan=lifespan)
+app: FastAPI = FastAPI(
+    title=settings.title,
+    version=settings.version,
+    contact={
+        "name": settings.contact_name,
+        "email": settings.contact_email,
+    },
+    openapi_url=None if not settings.environment.docs_available() else "/openapi.json",
+    lifespan=lifespan,
+)
+
 app.include_router(router)
-
-
-if settings.environment == EnvironmentEnum.PRODUCTION:
-    app.add_middleware(HTTPSRedirectMiddleware)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
 
 app.add_middleware(GZipMiddleware)
@@ -46,10 +40,3 @@ app.add_middleware(
     allow_methods=settings.cors_allow_methods,
     allow_headers=settings.cors_allow_headers,
 )
-
-
-@app.middleware("http")
-async def add_csp_header(request: Request, call_next):
-    response: Response = await call_next(request)
-    response.headers["Content-Security-Policy"] = "upgrade-insecure-requests"
-    return response

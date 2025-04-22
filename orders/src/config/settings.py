@@ -8,7 +8,7 @@ class EnvironmentEnum(str, Enum):
     PRODUCTION = "PRODUCTION"
     DEVELOPMENT = "DEVELOPMENT"
 
-    def docs_available(self):
+    def docs_available(self) -> bool:
         show_docs_environments = {EnvironmentEnum.DEVELOPMENT}
         return self in show_docs_environments
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     redis_host: str = "localhost"
     redis_port: int = 6379
-    redis_url: str = f"redis://localhost:6379"
+    redis_url: str = ""
 
     orders_stream: str = "orders-stream"
     orders_group: str = "orders-group"
@@ -42,16 +42,15 @@ class Settings(BaseSettings):
     cors_allow_origins: list[str] = []
     cors_allow_methods: list[str] = []
     cors_allow_headers: list[str] = []
-    allowed_hosts: list[str] = []
 
     @model_validator(mode="after")
-    def setup_dynamic_settings(self):
+    def setup_dynamic_settings(self) -> "Settings":
         if self.debug:
             self.cors_allow_origins = ["*"]
             self.cors_allow_methods = ["*"]
             self.cors_allow_headers = ["*"]
-            self.allowed_hosts = ["*"]
-        self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
+        if not self.redis_url:
+            self.redis_url = f"redis://{self.redis_host}:{self.redis_port}"
         return self
 
     model_config = SettingsConfigDict(env_file=".env")
