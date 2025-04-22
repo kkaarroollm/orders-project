@@ -9,7 +9,7 @@ export function useOrderTracking(orderId: string) {
     if (!orderId) return;
 
     const socket = new WebSocket(
-      `${NOTIFICATION_WS_URL}/order-tracking/${orderId}/ws`,
+      `${NOTIFICATION_WS_URL}/ws/v1/order-tracking/${orderId}`,
     );
 
     socket.onopen = () => console.log('WebSocket connected');
