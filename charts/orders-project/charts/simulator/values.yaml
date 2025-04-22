@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: kkaarroollm/simulator-service
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 containerPort: 8001
 service:

@@ -20,25 +20,17 @@ ingress-nginx:
     config:
       use-forwarded-headers: true
     ingressClassResource:
-      enabled: false
+      enabled: true
     ingressClass: nginx
 
 
 ingress:
   enabled: true
-  host: frontend.localhost
+  host: orders.karolmarszalek.me
   className: nginx
   annotations:
     kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/enable-websocket: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "7200"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "7200"
 
-
-  # Add TLS configuration also
-
-#### ADD TLS CONFIG TO INJECT INGRESS
-  # tls:
-  #   - secretName: frontend.localhost-tls
-  #     hosts:
-  #       - frontend.localhost
-
-#### ADD CONFIG MAP INGRESS ADDITIONAL DATA

@@ -2,7 +2,7 @@ replicaCount: 3
 image:
   repository: kkaarroollm/delivery-service
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 containerPort: 8001
 service:

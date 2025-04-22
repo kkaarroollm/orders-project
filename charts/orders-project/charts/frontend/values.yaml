@@ -1,8 +1,8 @@
 replicaCount: 3
 image:
   repository: kkaarroollm/frontend-service
-  tag: latest
-  pullPolicy: IfNotPresent
+  tag: production
+  pullPolicy: Always
 
 containerPort: 80
 service:

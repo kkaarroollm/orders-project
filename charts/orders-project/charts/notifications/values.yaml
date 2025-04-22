@@ -2,7 +2,7 @@ replicaCount: 3
 image:
   repository: kkaarroollm/notifications-service
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 containerPort: 8002
 service:
