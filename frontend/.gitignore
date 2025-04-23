@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env.production
+dist/
+node_modules/
+
