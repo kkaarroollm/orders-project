@@ -136,11 +136,11 @@ Includes:
 |--------------------------|-------|-----------------------------------------------------|
 | `order-service`          | 8003  | Processes customer orders                           |
 | `delivery-service`       | 8001  | Handles shipment and delivery status                |
-| `notifications-service`  | 8002  | Sends updates via Redis Streams                     |
+| `notifications-service`  | 8002  | Sends updates via Web Socket                        |
 | `order-simulator`        | -     | Simulates order lifecycle from creation to delivery |
 | `frontend`               | 3000  | React UI built with modern tooling                  |
-| `mongo`                  | 27017 | MongoDB replica (1-node)                            |
-| `redis`                  | 6379  | Redis for pub/sub & messaging                       |
+| `mongo`                  | 27017 | MongoDB replicas                                    |
+| `redis`                  | 6379  | Redis for streaming                                 |
 | `stock-refill` (CronJob) | -     | Periodically refills inventory stock                |
 
 ---
