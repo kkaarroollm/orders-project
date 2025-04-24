@@ -20,7 +20,7 @@ The design allows extensibility (e.g., adding new consumers or data pipelines) a
 
 ![Kubernetes Diagram](assets/orders-project-v2.svg)
 
-The Kubernetes setup includes Deployments, StatefulSets (Mongo & Redis), ConfigMaps, Secrets, Ingress NGINX with the Cloudflared tunnel, and a CronJob for stock refilling. Each microservice is deployed as a dedicated Kubernetes deployment with a corresponding ClusterIP service.
+The Kubernetes setup includes Deployments, StatefulSets (Mongo & Redis), ConfigMaps, Secrets, Ingress NGINX, and a CronJob for stock refilling. Each microservice is deployed as a dedicated Kubernetes deployment with a corresponding ClusterIP service.
 
 Three Helm-based init jobs run automatically upon the first deployment:
 
@@ -121,7 +121,7 @@ On first installation, three `Job` resources are triggered:
 
 Includes:
 
-- Ingress (NGINX + Cloudflared Tunnel)
+- Ingress (NGINX)
     
 - StatefulSets for MongoDB and Redis
     
