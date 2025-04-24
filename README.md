@@ -121,7 +121,7 @@ On first installation, three `Job` resources are triggered:
 
 Includes:
 
-- Ingress (NGINX + Cloudflared Tunnel)
+- Ingress (NGINX)
     
 - StatefulSets for MongoDB and Redis
     
