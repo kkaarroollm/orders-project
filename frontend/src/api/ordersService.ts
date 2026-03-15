@@ -15,6 +15,9 @@ export const fetchMenu = async (): Promise<MenuItem[]> => {
 };
 
 export const createOrder = async (order: Order): Promise<OrderResponse> => {
-  const response = await axios.post<OrderResponse>(`${ORDERS_API_BASE}/orders`, order);
+  const response = await axios.post<OrderResponse>(
+    `${ORDERS_API_BASE}/orders`,
+    order,
+  );
   return response.data;
 };

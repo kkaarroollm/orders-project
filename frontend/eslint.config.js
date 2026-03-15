@@ -23,7 +23,10 @@ export default tseslint
         ...reactHooks.configs.recommended.rules,
         'react-refresh/only-export-components': [
           'warn',
-          { allowConstantExport: true },
+          {
+            allowConstantExport: true,
+            allowExportNames: ['useTheme', 'buttonVariants', 'useFormField'],
+          },
         ],
       },
     },
