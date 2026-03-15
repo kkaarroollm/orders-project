@@ -23,5 +23,19 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.containerPort }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.containerPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.containerPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 2
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

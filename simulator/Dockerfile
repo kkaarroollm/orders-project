@@ -6,10 +6,11 @@ WORKDIR /app
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PYTHONPATH=/app
 
-COPY pyproject.toml ./uv.lock .python-version ./
+COPY simulator/pyproject.toml simulator/uv.lock simulator/.python-version ./
+COPY shared /shared
 
 RUN uv sync --frozen --no-cache
 
-COPY . .
+COPY simulator/ .
 
 CMD ["uv", "run", "python", "src/main.py"]

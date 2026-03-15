@@ -58,3 +58,5 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 2
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

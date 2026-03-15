@@ -52,7 +52,7 @@ const statusVariants = {
 };
 
 export default function OrderTracker({ orderId }: { orderId: string }) {
-  const currentStatus = useOrderTracking(orderId);
+  const { status: currentStatus, isConnected } = useOrderTracking(orderId);
 
   if (!currentStatus) {
     return (
@@ -60,7 +60,9 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
         <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
           📦 Order Tracking
         </h1>
-        <p className="text-gray-500 text-center">Loading order status...</p>
+        <p className="text-gray-500 text-center">
+          {isConnected ? 'Loading order status...' : 'Connecting...'}
+        </p>
       </Card>
     );
   }

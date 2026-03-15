@@ -30,7 +30,32 @@ services:
       - envs/mongo_db.env
     volumes:
       - ./scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
-    entrypoint: [ "/docker-entrypoint-initdb.d/init-replica.sh" ]
+    entrypoint: ["/docker-entrypoint-initdb.d/init-replica.sh"]
+    networks:
+      - backend_net
+
+  mongo-seed:
+    image: mongo:latest
+    container_name: mongo-seed
+    depends_on:
+      mongo-init-replica:
+        condition: service_completed_successfully
+    env_file:
+      - envs/mongo_db.env
+    volumes:
+      - ./scripts/seed-data.js:/seed-data.js:ro
+    entrypoint:
+      - mongosh
+      - --host
+      - mongo:27017
+      - -u
+      - root
+      - -p
+      - rootpassword
+      - --authenticationDatabase
+      - admin
+      - food-delivery
+      - /seed-data.js
     networks:
       - backend_net
 
@@ -39,89 +64,129 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - redis_data:/data
-    env_file:
-      - envs/redis.env
-    networks:
-      - backend_net
-
-  notifications-service:
-    build:
-      context: notifications
-      target: development
-    container_name: notifications-service
-    working_dir: /app
-    env_file:
-      - envs/mongo_db.env
-      - envs/redis.env
-    volumes:
-      - ./notifications:/app
-    depends_on:
-      - mongo
-      - redis
-    ports:
-      - "8002:8002"
-    networks:
-      - backend_net
-      - frontend_net
-
-  delivery-service:
-    build:
-      context: delivery
-      target: development
-    container_name: delivery-service
-    working_dir: /app
-    env_file:
-      - envs/mongo_db.env
-      - envs/redis.env
-    volumes:
-      - ./delivery:/app
-    depends_on:
-      - mongo
-      - redis
-    ports:
-      - "8001:8001"
     networks:
       - backend_net
 
   order-service:
     build:
-      context: orders
+      context: .
+      dockerfile: orders/Dockerfile
       target: development
     container_name: order-service
     working_dir: /app
     env_file:
       - envs/mongo_db.env
       - envs/redis.env
+    environment:
+      - DEBUG=true
+      - CORS_ALLOW_ORIGINS=["http://localhost","http://localhost:3000"]
     volumes:
       - ./orders:/app
+      - ./shared:/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/api/v1/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     depends_on:
-      - mongo
-      - redis
+      mongo-init-replica:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     ports:
       - "8003:8003"
     networks:
       - backend_net
-      - frontend_net
+
+  delivery-service:
+    build:
+      context: .
+      dockerfile: delivery/Dockerfile
+      target: development
+    container_name: delivery-service
+    working_dir: /app
+    env_file:
+      - envs/mongo_db.env
+      - envs/redis.env
+    environment:
+      - DEBUG=true
+    volumes:
+      - ./delivery:/app
+      - ./shared:/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      mongo-init-replica:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    networks:
+      - backend_net
+
+  notifications-service:
+    build:
+      context: .
+      dockerfile: notifications/Dockerfile
+      target: development
+    container_name: notifications-service
+    working_dir: /app
+    env_file:
+      - envs/redis.env
+    environment:
+      - DEBUG=true
+      - CORS_ALLOW_ORIGINS=["http://localhost","http://localhost:3000"]
+    volumes:
+      - ./notifications:/app
+      - ./shared:/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/v1/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+    networks:
+      - backend_net
 
   order-simulator:
     build:
-      context: simulator
+      context: .
+      dockerfile: simulator/Dockerfile
     container_name: order-simulator
     working_dir: /app
     volumes:
       - ./simulator:/app
+      - ./shared:/shared
     env_file:
       - envs/redis.env
       - envs/simulator.env
     depends_on:
-      - order-service
-      - delivery-service
-      - notifications-service
+      order-service:
+        condition: service_healthy
+      delivery-service:
+        condition: service_healthy
+      notifications-service:
+        condition: service_healthy
     networks:
       - backend_net
-      - frontend_net
 
   frontend:
     build:
@@ -138,9 +203,28 @@ services:
     restart: on-failure
     command: npm run dev
     depends_on:
-      - order-service
-      - notifications-service
+      order-service:
+        condition: service_healthy
     networks:
+      - frontend_net
+      - backend_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      order-service:
+        condition: service_healthy
+      notifications-service:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - backend_net
       - frontend_net
 
 volumes:
