@@ -1,39 +1,51 @@
 import asyncio
-import os
 import socket
 import uuid
-from typing import Awaitable
+from collections.abc import Awaitable
+from typing import Any
 
 from fastapi import FastAPI
+from pydantic import BaseModel
+from shared.redis.consumer import StreamConsumer
 
 from src.config import settings
-from src.interfaces import INotificationService
-from src.streams.redis_stream_consumer import RedisStreamConsumer
+
+
+class EventMessage(BaseModel):
+    id: str | None = None
+    order_id: str | None = None
+    status: str | None = None
 
 
 async def setup_streams(app: FastAPI) -> None:
     hostname = socket.gethostname()
     short_id = uuid.uuid4().hex[:6]
+    consumer_name = f"notifications-{hostname}-{short_id}"
 
-    service: INotificationService = app.state.notification_service
+    service = app.state.notification_service
     redis = app.state.redis_client
 
-    orders_consumer = RedisStreamConsumer(
+    orders_consumer: StreamConsumer[EventMessage] = StreamConsumer(
         redis=redis,
         stream=settings.orders_stream,
         group=settings.notifications_group,
-        consumer_name=f"notifications-{hostname}-{short_id}",
+        consumer_name=consumer_name,
+        message_type=EventMessage,
     )
 
-    deliveries_consumer = RedisStreamConsumer(
+    deliveries_consumer: StreamConsumer[EventMessage] = StreamConsumer(
         redis=redis,
         stream=settings.deliveries_stream,
         group=settings.notifications_group,
-        consumer_name=f"notifications-{hostname}-{short_id}",
+        consumer_name=consumer_name,
+        message_type=EventMessage,
     )
 
+    async def handle_event(msg: EventMessage) -> None:
+        await service.handle_event(msg.model_dump(exclude_none=True))
+
     app.state.subscription_task = asyncio.create_task(
-        _run_streams(orders_consumer.listen(service.handle_event), deliveries_consumer.listen(service.handle_event))
+        _run_streams(orders_consumer.listen(handle_event), deliveries_consumer.listen(handle_event))
     )
 
 

@@ -1,14 +1,14 @@
 [project]
 name = "notifications"
 version = "0.1.0"
-description = "Add your description here"
+description = "Notifications microservice for food delivery platform"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]==0.115.11",
-    "motor==3.7.0",
-    "pydantic-settings==2.8.1",
+    "pydantic-settings>=2.8.1",
     "redis==5.2.1",
+    "shared",
 ]
 
 [dependency-groups]
@@ -16,6 +16,9 @@ dev = [
     "mypy==1.15.0",
     "ruff==0.11.0",
 ]
+
+[tool.uv.sources]
+shared = { path = "../shared" }
 
 [tool.mypy]
 plugins = ['pydantic.mypy']

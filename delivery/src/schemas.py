@@ -1,9 +1,7 @@
 from enum import Enum
-from typing import Annotated, Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
-
-StrObjectId = Annotated[str, BeforeValidator(str)]
+from pydantic import BaseModel, Field
+from shared.schemas.base import BaseDocument, StrObjectId
 
 
 class DeliveryStatus(str, Enum):
@@ -18,14 +16,9 @@ class CourierSchema(BaseModel):
     phone_number: str
 
 
-class DeliverySchema(BaseModel):
-    id: Optional[StrObjectId] = Field(alias="_id", default=None)
+class DeliverySchema(BaseDocument):
     order_id: StrObjectId = Field(alias="order_id")
     status: DeliveryStatus = DeliveryStatus.WAITING_FOR_PICKUP
     courier: CourierSchema = Field(
         default_factory=lambda: CourierSchema(first_name="Random", last_name="Dude", phone_number="1234567890")
     )
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True

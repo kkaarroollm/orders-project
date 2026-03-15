@@ -1,14 +1,10 @@
-from abc import ABC, abstractmethod
+from typing import Any, Protocol, runtime_checkable
 
 from fastapi import WebSocket
 
 
-class IOrderStatusConnectionManager(ABC):
-    @abstractmethod
+@runtime_checkable
+class OrderStatusConnectionManagerProtocol(Protocol):
     async def connect(self, order_id: str, websocket: WebSocket) -> None: ...
-
-    @abstractmethod
     def disconnect(self, order_id: str, websocket: WebSocket) -> None: ...
-
-    @abstractmethod
-    async def broadcast(self, order_id: str, message: dict) -> None: ...
+    async def broadcast(self, order_id: str, message: dict[str, Any]) -> None: ...
