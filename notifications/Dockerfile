@@ -5,11 +5,12 @@ WORKDIR /app
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-COPY pyproject.toml ./uv.lock .python-version ./
+COPY notifications/pyproject.toml notifications/uv.lock notifications/.python-version ./
+COPY shared /shared
 
 FROM base AS development
 
-COPY . .
+COPY notifications/ .
 
 RUN uv sync --frozen --no-cache
 
@@ -19,7 +20,7 @@ CMD ["uv", "run", "fastapi", "dev", "src/main.py", "--proxy-headers", "--port", 
 
 FROM base AS production
 
-COPY . .
+COPY notifications/ .
 
 RUN uv sync --frozen --no-cache --no-dev
 
