@@ -42,6 +42,3 @@ async def stop_streams(app: FastAPI) -> None:
             await asyncio.wait_for(task, timeout=5)
         except asyncio.CancelledError:
             pass
-
-
-__all__ = ["setup_streams", "stop_streams"]

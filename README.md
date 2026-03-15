@@ -74,6 +74,29 @@ A scheduled **CronJob** runs every 2 hours to simulate stock refill.
 
 ---
 
+## 🐍 One UV Environment (Whole Project)
+
+If you want one Python interpreter and one `.venv` for all Python services, run from repo root:
+
+```bash
+uv lock
+uv sync --dev
+```
+
+This creates a shared environment at:
+
+```bash
+.venv/
+```
+
+Check the interpreter path:
+
+```bash
+uv run python -c "import sys; print(sys.executable)"
+```
+
+---
+
 ## 🐳 Docker Compose (local dev setup)
 
 Requirements:

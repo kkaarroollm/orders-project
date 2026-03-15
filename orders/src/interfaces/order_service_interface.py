@@ -3,6 +3,8 @@ from typing import Protocol, runtime_checkable
 from src.responses import OrderResponse
 from src.schemas import OrderSchema, OrderStatus
 
+__all__ = ["OrderServiceProtocol"]
+
 
 @runtime_checkable
 class OrderServiceProtocol(Protocol):

@@ -17,6 +17,7 @@ const MenuPage = () => {
   });
 
   const { cart, updateCart } = useCart();
+  const menuItems = Array.isArray(menu) ? menu : [];
 
   if (isLoading) return <p>Loading menu...</p>;
   if (error) return <p className="text-red-500">Failed to load menu.</p>;
@@ -24,8 +25,9 @@ const MenuPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">🍔 Menu</h1>
+      {menuItems.length === 0 && <p className="text-sm text-muted-foreground">No menu items available.</p>}
       <div className="grid gap-4">
-        {menu?.map((item) => (
+        {menuItems.map((item) => (
           <div
             key={item._id ?? ''}
             className="p-4 border rounded-lg shadow flex justify-between items-center"

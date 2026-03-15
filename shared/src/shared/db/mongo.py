@@ -6,7 +6,9 @@ from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.asynchronous.database import AsyncDatabase
 
 
-async def connect_mongo(url: str, database: str) -> tuple[AsyncMongoClient, AsyncDatabase]:
+async def connect_mongo(
+    url: str, database: str
+) -> tuple[AsyncMongoClient, AsyncDatabase]:
     mongo_client: AsyncMongoClient = AsyncMongoClient(url)
     db = mongo_client[database]
 
@@ -25,8 +27,8 @@ class MongoTransactionManager:
         self._session: AsyncClientSession | None = None
 
     async def __aenter__(self) -> AsyncClientSession:
-        self._session = await self._client.start_session()
-        self._session.start_transaction()
+        self._session = self._client.start_session()
+        await self._session.start_transaction()
         return self._session
 
     async def __aexit__(
