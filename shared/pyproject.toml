@@ -1,15 +1,13 @@
 [project]
-name = "orders"
+name = "shared"
 version = "0.1.0"
-description = "Orders microservice for food delivery platform"
-readme = "README.md"
+description = "Shared library for orders-project microservices"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]==0.115.11",
     "pymongo>=4.10",
-    "pydantic-settings>=2.8.1",
-    "redis==5.2.1",
-    "shared",
+    "redis>=5.2",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.8",
 ]
 
 [dependency-groups]
@@ -17,9 +15,6 @@ dev = [
     "mypy==1.15.0",
     "ruff==0.11.0",
 ]
-
-[tool.uv.sources]
-shared = { path = "../shared" }
 
 [tool.mypy]
 plugins = ['pydantic.mypy']

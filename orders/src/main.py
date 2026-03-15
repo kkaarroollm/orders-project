@@ -1,5 +1,5 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,8 +11,7 @@ from src.routes import router
 
 
 @asynccontextmanager
-async def lifespan(app_: FastAPI) -> AsyncGenerator:
-    """Handles application startup and shutdown."""
+async def lifespan(app_: FastAPI) -> AsyncGenerator[None]:
     await startup(app_)
     yield
     await teardown(app_)

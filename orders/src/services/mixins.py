@@ -1,11 +1,10 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-
-from src.databases import MongoDBTransactionManager
+from pymongo import AsyncMongoClient
+from shared.db.mongo import MongoTransactionManager
 
 
 class TransactionServiceMixin:
-    def __init__(self, mongo_client: AsyncIOMotorClient):
+    def __init__(self, mongo_client: AsyncMongoClient) -> None:
         self._mongo_client = mongo_client
 
-    def transaction(self) -> MongoDBTransactionManager:
-        return MongoDBTransactionManager(self._mongo_client)
+    def transaction(self) -> MongoTransactionManager:
+        return MongoTransactionManager(self._mongo_client)

@@ -4,16 +4,12 @@ import logging
 
 
 class JSONFormatter(logging.Formatter):
-    """
-    Formatter that outputs JSON strings after parsing the LogRecord.
-    """
-
-    def __init__(self, fmt_keys: dict[str, str] | None = None):
+    def __init__(self, fmt_keys: dict[str, str] | None = None) -> None:
         super().__init__()
         self.fmt_keys = fmt_keys or {}
 
     def format(self, record: logging.LogRecord) -> str:
-        base_fields = {
+        base_fields: dict[str, str] = {
             "message": record.getMessage(),
             "timestamp": dt.datetime.fromtimestamp(record.created, tz=dt.timezone.utc).isoformat(),
         }
