@@ -1,45 +1,39 @@
 import asyncio
 import json
 import logging
+from typing import Any
 
-from redis.asyncio import Redis
+from shared.redis.publisher import StreamProducer
 
 from src.config import settings
-from src.interfaces import ISimulationStrategy
 from src.schemas import DeliveryStatus, OrderStatus, SimulationStream
 
 
-class OrderSimulationStrategy(ISimulationStrategy):
-    async def process(self, entity_id: str, redis_client: Redis, output_stream: str) -> None:
-        logging.info(f"Starting ORDER simulation for {entity_id}")
+class OrderSimulationStrategy:
+    async def process(self, entity_id: str, producer: StreamProducer[Any], output_stream: str) -> None:
+        logging.info("Starting ORDER simulation for %s", entity_id)
         await asyncio.sleep(settings.order_confirming_delay)
-        await redis_client.xadd(output_stream, {"data": json.dumps({"id": entity_id, "status": OrderStatus.PREPARING})})
-        logging.info(f"Order {entity_id} -> {OrderStatus.PREPARING}")
+        await producer.publish_raw(output_stream, {"id": entity_id, "status": OrderStatus.PREPARING})
+        logging.info("Order %s -> %s", entity_id, OrderStatus.PREPARING)
 
         await asyncio.sleep(settings.order_preparing_delay)
-        await redis_client.xadd(
-            output_stream, {"data": json.dumps({"id": entity_id, "status": OrderStatus.OUT_FOR_DELIVERY})}
-        )
-        logging.info(f"Order {entity_id} -> {OrderStatus.OUT_FOR_DELIVERY}")
+        await producer.publish_raw(output_stream, {"id": entity_id, "status": OrderStatus.OUT_FOR_DELIVERY})
+        logging.info("Order %s -> %s", entity_id, OrderStatus.OUT_FOR_DELIVERY)
 
 
-class DeliverySimulationStrategy(ISimulationStrategy):
-    async def process(self, entity_id: str, redis_client: Redis, output_stream: str) -> None:
-        logging.info(f"Starting DELIVERY simulation for {entity_id}")
+class DeliverySimulationStrategy:
+    async def process(self, entity_id: str, producer: StreamProducer[Any], output_stream: str) -> None:
+        logging.info("Starting DELIVERY simulation for %s", entity_id)
         await asyncio.sleep(settings.delivery_waiting_delay)
-        await redis_client.xadd(
-            output_stream, {"data": json.dumps({"id": entity_id, "status": DeliveryStatus.ON_THE_WAY})}
-        )
-        logging.info(f"Delivery {entity_id} -> {DeliveryStatus.ON_THE_WAY}")
+        await producer.publish_raw(output_stream, {"id": entity_id, "status": DeliveryStatus.ON_THE_WAY})
+        logging.info("Delivery %s -> %s", entity_id, DeliveryStatus.ON_THE_WAY)
 
         await asyncio.sleep(settings.delivery_way_delay)
-        await redis_client.xadd(
-            output_stream, {"data": json.dumps({"id": entity_id, "status": DeliveryStatus.DELIVERED})}
-        )
-        logging.info(f"Delivery {entity_id} -> {DeliveryStatus.DELIVERED}")
+        await producer.publish_raw(output_stream, {"id": entity_id, "status": DeliveryStatus.DELIVERED})
+        logging.info("Delivery %s -> %s", entity_id, DeliveryStatus.DELIVERED)
 
 
-SIMULATION_STRATEGY = {
+SIMULATION_STRATEGY: dict[SimulationStream, OrderSimulationStrategy | DeliverySimulationStrategy] = {
     SimulationStream.ORDER: OrderSimulationStrategy(),
     SimulationStream.DELIVERY: DeliverySimulationStrategy(),
 }

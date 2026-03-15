@@ -1,7 +1,7 @@
 from fastapi import FastAPI
+from shared.redis.connection import connect_redis
 
 from src.config import settings
-from src.database.redis_connection import connect_redis
 
 
 async def setup_redis(app: FastAPI) -> None:

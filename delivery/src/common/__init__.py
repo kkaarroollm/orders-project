@@ -1,1 +1,1 @@
-from src.common.logging.setup import setup_logging
+from shared.logging import setup_logging

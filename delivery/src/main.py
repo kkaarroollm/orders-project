@@ -1,5 +1,5 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 
@@ -10,7 +10,6 @@ from src.routes import router
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI) -> AsyncIterator[None]:
-    """Handles application startup and shutdown."""
     await startup(app_)
     yield
     await teardown(app_)

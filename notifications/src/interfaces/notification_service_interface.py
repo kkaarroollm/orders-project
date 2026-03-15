@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
+from typing import Any, Protocol, runtime_checkable
 
 
-class INotificationService(ABC):
-    @abstractmethod
-    async def handle_event(self, data: dict) -> None: ...
+@runtime_checkable
+class NotificationServiceProtocol(Protocol):
+    async def handle_event(self, data: dict[str, Any]) -> None: ...

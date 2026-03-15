@@ -1,3 +1,1 @@
-from src.interfaces.basic_simulation_interface import ISimulationStrategy
-from src.interfaces.stream_consumer_interface import IRedisStreamConsumer
-from src.interfaces.stream_publisher_interface import IRedisStreamPublisher
+from src.interfaces.basic_simulation_interface import SimulationStrategyProtocol

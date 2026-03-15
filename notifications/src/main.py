@@ -1,6 +1,7 @@
+import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,8 +14,7 @@ from src.websockets import ws_order_status_manager
 
 
 @asynccontextmanager
-async def lifespan(app_: FastAPI) -> AsyncGenerator:
-    """Handles application startup and shutdown."""
+async def lifespan(app_: FastAPI) -> AsyncGenerator[None]:
     await startup(app_)
     yield
     await teardown(app_)
@@ -41,15 +41,23 @@ async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
         try:
             await websocket.send_json(status)
         except WebSocketDisconnect:
-            logging.warning(f"Client disconnected before receiving initial status: {order_id}")
+            logging.warning("Client disconnected before receiving initial status: %s", order_id)
             ws_order_status_manager.disconnect(order_id, websocket)
             return
 
     try:
         while True:
-            await websocket.receive_text()
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+            except asyncio.TimeoutError:
+                try:
+                    await websocket.send_json({"type": "ping"})
+                except Exception:
+                    break
     except WebSocketDisconnect:
-        logging.info(f"WebSocket disconnected for order {order_id}")
+        pass
+    finally:
+        logging.info("WebSocket disconnected for order %s", order_id)
         ws_order_status_manager.disconnect(order_id, websocket)
 
 

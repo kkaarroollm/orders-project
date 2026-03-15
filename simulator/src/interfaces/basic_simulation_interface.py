@@ -1,8 +1,8 @@
-from abc import ABC, abstractmethod
+from typing import Protocol, runtime_checkable
 
-from redis.asyncio import Redis
+from shared.redis.publisher import StreamProducer
 
 
-class ISimulationStrategy(ABC):
-    @abstractmethod
-    async def process(self, entity_id: str, redis_client: Redis, output_stream: str) -> None: ...
+@runtime_checkable
+class SimulationStrategyProtocol(Protocol):
+    async def process(self, entity_id: str, producer: StreamProducer, output_stream: str) -> None: ...  # type: ignore[type-arg]
