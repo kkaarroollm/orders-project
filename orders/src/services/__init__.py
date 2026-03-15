@@ -1,14 +1,15 @@
+from typing import Any
+
 from fastapi import FastAPI
+from shared.redis.publisher import StreamProducer
 
 from src.services.menu_service import MenuService
 from src.services.mixins import TransactionServiceMixin
 from src.services.order_service import OrderService
-from src.streams import RedisStreamPublisher
 
 
 async def setup_services(app: FastAPI) -> None:
-    """Initialize all services with required dependencies and attach to app state."""
-    publisher = RedisStreamPublisher(app.state.redis_client)
+    publisher: StreamProducer[Any] = StreamProducer(app.state.redis_client)
     menu_repo = app.state.menu_repository
     order_repo = app.state.order_repository
 
