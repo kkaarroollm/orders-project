@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from shared.db.mongo import connect_mongo
 from shared.redis.connection import connect_redis
 
-from src.config import settings
+from src.settings import settings
 
 
 async def setup_databases(app: FastAPI) -> None:
