@@ -1,8 +1,8 @@
 from fastapi import FastAPI
+from shared.db.mongo import connect_mongo
+from shared.redis.connection import connect_redis
 
 from src.config import settings
-from src.databases.connections import connect_mongo, connect_redis
-from src.databases.mongo_transaction import MongoDBTransactionManager
 
 
 async def setup_databases(app: FastAPI) -> None:
@@ -17,4 +17,4 @@ async def close_databases(app: FastAPI) -> None:
         mongo.close()
 
 
-__all__ = ["setup_databases", "close_databases", "MongoDBTransactionManager"]
+__all__ = ["setup_databases", "close_databases"]

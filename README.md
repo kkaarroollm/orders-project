@@ -20,7 +20,7 @@ The design allows extensibility (e.g., adding new consumers or data pipelines) a
 
 ![Kubernetes Diagram](assets/orders-project-v2.svg)
 
-The Kubernetes setup includes Deployments, StatefulSets (Mongo & Redis), ConfigMaps, Secrets, Ingress NGINX, and a CronJob for stock refilling. Each microservice is deployed as a dedicated Kubernetes deployment with a corresponding ClusterIP service.
+The Kubernetes setup includes Deployments, StatefulSets (Mongo & Redis), ConfigMaps, Secrets, Ingress NGINX with the Cloudflared tunnel, and a CronJob for stock refilling. Each microservice is deployed as a dedicated Kubernetes deployment with a corresponding ClusterIP service.
 
 Three Helm-based init jobs run automatically upon the first deployment:
 
@@ -121,7 +121,7 @@ On first installation, three `Job` resources are triggered:
 
 Includes:
 
-- Ingress (NGINX)
+- Ingress (NGINX + Cloudflared Tunnel)
     
 - StatefulSets for MongoDB and Redis
     
@@ -136,11 +136,11 @@ Includes:
 |--------------------------|-------|-----------------------------------------------------|
 | `order-service`          | 8003  | Processes customer orders                           |
 | `delivery-service`       | 8001  | Handles shipment and delivery status                |
-| `notifications-service`  | 8002  | Sends updates via Web Socket                        |
+| `notifications-service`  | 8002  | Sends updates via Redis Streams                     |
 | `order-simulator`        | -     | Simulates order lifecycle from creation to delivery |
 | `frontend`               | 3000  | React UI built with modern tooling                  |
-| `mongo`                  | 27017 | MongoDB replicas                                    |
-| `redis`                  | 6379  | Redis for streaming                                 |
+| `mongo`                  | 27017 | MongoDB replica (1-node)                            |
+| `redis`                  | 6379  | Redis for pub/sub & messaging                       |
 | `stock-refill` (CronJob) | -     | Periodically refills inventory stock                |
 
 ---
