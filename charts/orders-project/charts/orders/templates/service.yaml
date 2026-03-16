@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "orders-project.labels" . | nindent 4 }}
+    app: orders
 spec:
   selector:
     app: orders

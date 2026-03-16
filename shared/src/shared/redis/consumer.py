@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import time
@@ -36,6 +35,7 @@ class StreamConsumer(Generic[TMessage]):
         self._message_type = message_type
         self._max_retries = max_retries
         self._dlq_stream = dlq_stream
+        self._claim_cursor: str = "0-0"
 
     async def bind_group(self) -> None:
         try:
@@ -63,7 +63,6 @@ class StreamConsumer(Generic[TMessage]):
                 await self._claim_pending(handler)
 
             if not (messages := await self._read_messages()):
-                await asyncio.sleep(1)
                 continue
 
             for _, entries in messages:
@@ -182,10 +181,12 @@ class StreamConsumer(Generic[TMessage]):
                 groupname=self._group,
                 consumername=self._consumer_name,
                 min_idle_time=_PENDING_CLAIM_INTERVAL,
+                start_id=self._claim_cursor,
                 count=_PENDING_CLAIM_BATCH,
             )
             # xautoclaim returns (next_start_id, claimed_messages, deleted_ids)
             if claimed and len(claimed) > 1:
+                self._claim_cursor = claimed[0] if claimed[0] != "0-0" else "0-0"
                 messages = claimed[1]
                 if messages:
                     logging.info("Claimed %d pending messages from %s", len(messages), self._stream)

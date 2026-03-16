@@ -31,7 +31,7 @@ class DeliveryService:
             correlation_id=msg.id,
         )
 
-        if getattr(msg, "simulation", 1) != -1:
+        if getattr(msg, "simulation", -1) != -1:
             await self._publisher.publish_raw(
                 settings.simulate_delivery_stream,
                 msg.model_dump(mode="json"),

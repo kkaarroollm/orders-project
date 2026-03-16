@@ -17,9 +17,10 @@ class StreamProducer(Generic[TMessage]):
     async def publish(self, stream: str, message: TMessage, *, event_type: str = "", correlation_id: str = "") -> None:
         try:
             data = message.model_dump(mode="json")
-            envelope = self._wrap(data, event_type=event_type, correlation_id=correlation_id or data.get("id", ""))
+            effective_id = correlation_id or data.get("id", "")
+            envelope = self._wrap(data, event_type=event_type, correlation_id=effective_id)
             await self._redis.xadd(stream, {"data": json.dumps(envelope)})
-            logging.info("Published to `%s`: event=%s correlation=%s", stream, event_type, correlation_id)
+            logging.info("Published to `%s`: event=%s correlation=%s", stream, event_type, effective_id)
         except Exception as e:
             logging.error("Failed to publish to Redis stream `%s`: %s", stream, e)
 
@@ -32,9 +33,10 @@ class StreamProducer(Generic[TMessage]):
         correlation_id: str = "",
     ) -> None:
         try:
-            envelope = self._wrap(data, event_type=event_type, correlation_id=correlation_id or data.get("id", ""))
+            effective_id = correlation_id or data.get("id", "")
+            envelope = self._wrap(data, event_type=event_type, correlation_id=effective_id)
             await self._redis.xadd(stream, {"data": json.dumps(envelope)})
-            logging.info("Published to `%s`: event=%s correlation=%s", stream, event_type, correlation_id)
+            logging.info("Published to `%s`: event=%s correlation=%s", stream, event_type, effective_id)
         except Exception as e:
             logging.error("Failed to publish to Redis stream `%s`: %s", stream, e)
 
