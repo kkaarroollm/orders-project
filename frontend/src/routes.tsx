@@ -4,6 +4,7 @@ import MenuPage from '@/pages/Menu';
 import OrderPage from '@/pages/Order';
 import CartPage from '@/pages/Cart.tsx';
 import OrderTracking from '@/pages/OrderTracking.tsx';
+import DevTools from '@/pages/DevTools.tsx';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -37,6 +38,18 @@ const trackerRoute = createRoute({
   component: OrderTracking,
 });
 
-rootRoute.addChildren([menuRoute, cartRoute, orderRoute, trackerRoute]);
+const devToolsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dev',
+  component: DevTools,
+});
+
+rootRoute.addChildren([
+  menuRoute,
+  cartRoute,
+  orderRoute,
+  trackerRoute,
+  devToolsRoute,
+]);
 
 export const routeTree = rootRoute;

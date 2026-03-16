@@ -165,6 +165,35 @@ Includes:
 | `mongo`                  | 27017 | MongoDB replica (1-node)                            |
 | `redis`                  | 6379  | Redis for pub/sub & messaging                       |
 | `stock-refill` (CronJob) | -     | Periodically refills inventory stock                |
+| `prometheus`             | 9090  | Metrics collection & PromQL queries                 |
+| `grafana`                | 3001  | Dashboards & visualization (proxied at `/grafana/`)  |
+| `loki`                   | 3100  | Log aggregation backend                              |
+| `promtail`               | -     | Collects container logs and ships to Loki            |
+| `nginx`                  | 80    | Reverse proxy for frontend, APIs & Grafana           |
+
+---
+
+## 📊 Monitoring & Observability
+
+The project includes a full observability stack:
+
+- **Prometheus** — scrapes `/metrics` from all FastAPI services every 15s
+- **Grafana** — dashboards and log exploration (Loki datasource pre-provisioned)
+- **Loki + Promtail** — aggregates container logs from Docker
+
+### Quick Links (Docker Compose)
+
+| Tool                        | URL                                  | Credentials     |
+|-----------------------------|--------------------------------------|-----------------|
+| Frontend                    | http://localhost                      | —               |
+| Dev Tools page              | http://localhost/dev                  | —               |
+| Grafana                     | http://localhost/grafana/             | admin / admin   |
+| Prometheus                  | http://localhost:9090                 | —               |
+| Order Service — API Docs    | http://localhost:8003/docs            | —               |
+| Delivery Service — API Docs | http://localhost:8001/docs            | —               |
+| Notifications — API Docs    | http://localhost:8002/docs            | —               |
+
+All service OpenAPI docs are available only in `DEVELOPMENT` environment.
 
 ---
 
@@ -176,11 +205,14 @@ Includes:
 ├── orders/                 # FastAPI – orders service
 ├── delivery/               # FastAPI – delivery logic
 ├── notifications/          # FastAPI – notifications + Redis
+├── shared/                 # Shared Python library (Redis, metrics, settings)
 ├── simulator/              # Just Python and streams – generates synthetic events
+├── monitoring/             # Prometheus, Grafana, Loki & Promtail configs
+├── nginx/                  # Nginx reverse proxy configs (dev & prod)
 ├── charts/                 # Helm chart & init jobs
 ├── envs/                   # All .env files required
-├── scripts/init-replica.sh # Replica init script (Docker)
-├── assets/*.png            # Diagrams
+├── scripts/                # Init scripts (replica, seed data)
+├── assets/                 # Architecture diagrams
 └── docker-compose.yaml     # Dev-only deployment stack
 ```
 
@@ -188,16 +220,11 @@ Includes:
 
 ## ✅ TODO
 
-- [ ]  Implement CQRS and Event Sourcing
-    
-- [ ]  Logging & monitoring (Prometheus, Grafana)—a log format is ready.
-    
-- [ ]  Set up cache invalidation via CronJob
-    
-- [ ]  Enhance Redis Stream consumers with XPENDING + XCLAIM logic
-
-- [ ]  UNIT tests for all services 
-    
+- [ ] Implement CQRS and Event Sourcing
+- [x] Logging & monitoring (Prometheus, Grafana, Loki)
+- [ ] Set up cache invalidation via CronJob
+- [x] Enhance Redis Stream consumers with XPENDING + XCLAIM logic
+- [ ] Unit tests for all services (orders covered, delivery & notifications pending)
 
 
 ## 🍺 Author
