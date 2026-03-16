@@ -1,6 +1,6 @@
 # Orders Project
 
-A microservices-based food delivery system built with **FastAPI + MongoDB + Redis**, supporting **Kubernetes** and **Docker Compose** environments. Features event-driven communication via Redis Streams (SAGA pattern), a full observability stack, and a React frontend.
+A microservices-based food delivery system built with **FastAPI + MongoDB + Redis**, supporting **Kubernetes** and **Docker Compose** environments. Features event-driven choreography via Redis Streams, a full observability stack, and a React frontend.
 
 Deployed on a self-hosted Kubernetes cluster (Raspberry Pi) at [orders.karolmarszalek.me](https://orders.karolmarszalek.me/).
 
