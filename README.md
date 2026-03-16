@@ -1,114 +1,14 @@
-# 🧙🏻‍♂️ Orders Project – Microservices Architecture
+# Orders Project
 
-> A complete microservices-based architecture built with FastAPI + MongoDB + Redis, supporting Kubernetes and Docker Compose environments. The project includes a simulated order lifecycle and event-stream communication between services. 
-> 
-> Deployed on my **self-hosted** Kubernetes cluster running on a **Raspberry Pi**, using Ingress NGINX and a Cloudflared tunnel for secure public access at [orders.karolmarszalek.me](https://orders.karolmarszalek.me/).
----
+A microservices-based food delivery system built with **FastAPI + MongoDB + Redis**, supporting **Kubernetes** and **Docker Compose** environments. Features event-driven communication via Redis Streams (SAGA pattern), a full observability stack, and a React frontend.
 
-## 👽 System Architecture Overview
+Deployed on a self-hosted Kubernetes cluster (Raspberry Pi) at [orders.karolmarszalek.me](https://orders.karolmarszalek.me/).
 
-### 🦕 Service Communication & Stream Architecture
+## Architecture
 
 ![Architecture Diagram](assets/arch-diagram.svg)
 
-This system follows a SAGA Pattern for managing distributed transactions across microservices. Services communicate primarily over REST, Web Sockets, and Redis Streams to track and coordinate the order lifecycle. Redis acts as an event bus for both real-time messaging and data decoupling.
-
-The design allows extensibility (e.g., adding new consumers or data pipelines) and cleanly separates responsibilities into domain-driven services. Each service loads its configuration from environment files and connects to MongoDB and Redis.
-
-
-### ☸️ Kubernetes Deployment Architecture
-
-![Kubernetes Diagram](assets/orders-project-v2.svg)
-
-The Kubernetes setup includes Deployments, StatefulSets (Mongo & Redis), ConfigMaps, Secrets, Ingress NGINX with the Cloudflared tunnel, and a CronJob for stock refilling. Each microservice is deployed as a dedicated Kubernetes deployment with a corresponding ClusterIP service.
-
-Three Helm-based init jobs run automatically upon the first deployment:
-
-- **`init-rs-job.yaml`**: Initializes MongoDB replica set (`rs0`) – extendable, depends on your resources and needs.
-     
-- **`init-user-job.yaml`**: Creates the initial MongoDB admin user.
-    
-- **`init-dummy-db-job.yaml`**: Loads demo data into Mongo.
-    
-
-All configurable values (envs, secrets, image tags) can be set in the Helm `values.yaml` in the main chart and its subcharts.
-
-A scheduled **CronJob** runs every 2 hours to simulate stock refill.
-
----
-
-## ⚙️ Tech Stack
-
-### Backend (Python)
-
-- **FastAPI** – for building async REST APIs
-    
-- **Pydantic / pydantic-settings** – for schema validation & env config
-    
-- **Motor** – async MongoDB client
-    
-- **Redis** – pub/sub messaging system
-    
-
-**Dev tooling:**
-
-- `mypy`, `ruff`
-    
-
-### Frontend (React)
-
-- **React 19** + **TypeScript**
-    
-- **Vite** for lightning-fast build & dev
-    
-- **Tailwind CSS** + `shadcn/ui` components
-    
-- **TanStack Query & Router**
-    
-- **Framer Motion** – for animations
-    
-- **Zod** – schema validation
-    
-- **ESLint + Prettier** – code quality
-    
-
----
-
-## 🐍 One UV Environment (Whole Project)
-
-If you want one Python interpreter and one `.venv` for all Python services, run from repo root:
-
-```bash
-uv lock
-uv sync --dev
-```
-
-This creates a shared environment at:
-
-```bash
-.venv/
-```
-
-Check the interpreter path:
-
-```bash
-uv run python -c "import sys; print(sys.executable)"
-```
-
----
-
-## 🐳 Docker Compose (local dev setup)
-
-Requirements:
-
-- Docker + Docker Compose installed
-    
-- Environment files copied into `envs/` (remove `default.` prefix):
-    
-    - `mongo_db.env`, `redis.env`, `simulator.env`, `mongo-keyfile`
-        
-
-### ✅ Startup command:
+## Quick Start
 
 ```bash
 cp envs/default.mongo_db.env envs/mongo_db.env
@@ -119,122 +19,19 @@ cp envs/default.mongo-keyfile envs/mongo-keyfile
 docker compose up --build
 ```
 
-> Frontend available at: [http://localhost:3000](http://localhost:3000/)
+Open [http://localhost](http://localhost) for the frontend, [http://localhost/dev](http://localhost/dev) for dev tools (Grafana, Prometheus, API docs).
 
----
+## Documentation
 
-## ☸️ Kubernetes (Helm deployment)
+Full documentation is available at the [docs site](https://kkaarroollm.github.io/orders-project/).
 
-### 📦 Install using Helm:
+- [Getting Started](https://kkaarroollm.github.io/orders-project/getting-started.html)
+- [Architecture](https://kkaarroollm.github.io/orders-project/architecture.html)
+- [Services](https://kkaarroollm.github.io/orders-project/services.html)
+- [Monitoring](https://kkaarroollm.github.io/orders-project/monitoring.html)
+- [Deployment](https://kkaarroollm.github.io/orders-project/deployment.html)
+- [Development](https://kkaarroollm.github.io/orders-project/development.html)
 
-```bash
-helm install orders ./charts/orders-project
-```
+## Author
 
-Make sure to configure your own secrets, user credentials, and connection strings in the `values.yaml` files across the main chart and subcharts.
-
-On first installation, three `Job` resources are triggered:
-
-- Initializes Mongo replica set (1-node by default)
-    
-- Creates initial database user
-    
-- Loads test data into the database
-    
-
-Includes:
-
-- Ingress (NGINX + Cloudflared Tunnel)
-    
-- StatefulSets for MongoDB and Redis
-    
-- CronJob `stock-refill` that periodically replenishes item stock
-    
-
----
-
-## 🧩 Microservices Overview
-
-| Name                     | Port  | Description                                         |
-|--------------------------|-------|-----------------------------------------------------|
-| `order-service`          | 8003  | Processes customer orders                           |
-| `delivery-service`       | 8001  | Handles shipment and delivery status                |
-| `notifications-service`  | 8002  | Sends updates via Redis Streams                     |
-| `order-simulator`        | -     | Simulates order lifecycle from creation to delivery |
-| `frontend`               | 3000  | React UI built with modern tooling                  |
-| `mongo`                  | 27017 | MongoDB replica (1-node)                            |
-| `redis`                  | 6379  | Redis for pub/sub & messaging                       |
-| `stock-refill` (CronJob) | -     | Periodically refills inventory stock                |
-| `prometheus`             | 9090  | Metrics collection & PromQL queries                 |
-| `grafana`                | 3001  | Dashboards & visualization (proxied at `/grafana/`)  |
-| `loki`                   | 3100  | Log aggregation backend                              |
-| `promtail`               | -     | Collects container logs and ships to Loki            |
-| `nginx`                  | 80    | Reverse proxy for frontend, APIs & Grafana           |
-
----
-
-## 📊 Monitoring & Observability
-
-The project includes a full observability stack:
-
-- **Prometheus** — scrapes `/metrics` from all FastAPI services every 15s
-- **Grafana** — dashboards and log exploration (Loki datasource pre-provisioned)
-- **Loki + Promtail** — aggregates container logs from Docker
-
-### Quick Links (Docker Compose)
-
-| Tool                        | URL                                          | Credentials     |
-|-----------------------------|----------------------------------------------|-----------------|
-| Frontend                    | http://localhost                               | —               |
-| Dev Tools page              | http://localhost/dev                           | —               |
-| Grafana (admin)             | http://localhost/grafana/                      | admin / admin   |
-| HTTP Metrics dashboard      | http://localhost/grafana/d/http-metrics        | — (read-only)   |
-| Application Logs dashboard  | http://localhost/grafana/d/application-logs    | — (read-only)   |
-| Event Pipeline dashboard    | http://localhost/grafana/d/event-pipeline       | — (read-only)   |
-| Prometheus (read-only)      | http://localhost/prometheus/                   | —               |
-| Order Service — API Docs    | http://localhost:8003/docs                     | —               |
-| Delivery Service — API Docs | http://localhost:8001/docs                     | —               |
-| Notifications — API Docs    | http://localhost:8002/docs                     | —               |
-
-Grafana dashboards are accessible without login (anonymous viewer role). Admin access requires credentials above.
-
-All service OpenAPI docs are available only in `DEVELOPMENT` environment.
-
----
-
-## 📁 Project Structure
-
-```plaintext
-.
-├── frontend/               # React + TS + Tailwind UI
-├── orders/                 # FastAPI – orders service
-├── delivery/               # FastAPI – delivery logic
-├── notifications/          # FastAPI – notifications + Redis
-├── shared/                 # Shared Python library (Redis, metrics, settings)
-├── simulator/              # Just Python and streams – generates synthetic events
-├── monitoring/             # Prometheus, Grafana, Loki & Promtail configs
-├── nginx/                  # Nginx reverse proxy configs (dev & prod)
-├── charts/                 # Helm chart & init jobs
-├── envs/                   # All .env files required
-├── scripts/                # Init scripts (replica, seed data)
-├── assets/                 # Architecture diagrams
-└── docker-compose.yaml     # Dev-only deployment stack
-```
-
----
-
-## ✅ TODO
-
-- [ ] Implement CQRS and Event Sourcing
-- [x] Logging & monitoring (Prometheus, Grafana, Loki)
-- [ ] Set up cache invalidation via CronJob
-- [x] Enhance Redis Stream consumers with XPENDING + XCLAIM logic
-- [ ] Unit tests for all services (orders covered, delivery & notifications pending)
-
-
-## 🍺 Author
-
-Made with **beer** by: **kkaarroollm** → [website](https://karolmarszalek.me/)  
-
-Built with: FastAPI, Redis, MongoDB, React, Helm, Docker Compose
-
+Made with **beer** by **kkaarroollm** -- [website](https://karolmarszalek.me/)

@@ -4,3 +4,5 @@
 
 shared/build/
 shared/src/*.egg-info/
+
+docs/_build/
