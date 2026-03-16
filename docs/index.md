@@ -1,16 +1,17 @@
 # Orders Project
 
-A microservices-based food delivery system built with **FastAPI**, **MongoDB**, **Redis**, and **React**. Supports both Docker Compose and Kubernetes (Helm) deployments.
+A microservices-based food delivery system exploring **event-driven architecture**, **distributed systems patterns**, and **container orchestration**. Built with FastAPI, MongoDB, Redis Streams, and React.
 
 Deployed on a self-hosted Kubernetes cluster (Raspberry Pi) at [orders.karolmarszalek.me](https://orders.karolmarszalek.me/).
 
-## Highlights
+## What Makes This Interesting
 
-- **Event-driven architecture** using Redis Streams with SAGA pattern
-- **Full observability** with Prometheus, Grafana, and Loki
-- **Typed Python** codebase with `ty` type checker and `ruff` linter
-- **UV workspace** for unified dependency management across all services
-- **Helm chart** with monitoring stack (kube-prometheus-stack, Loki, Promtail)
+- **Event-driven choreography** -- services communicate exclusively through Redis Streams, with no synchronous inter-service calls
+- **Guaranteed message delivery** -- consumer groups, automatic retries, and a dead-letter queue ensure no event is silently lost
+- **ACID transactions + eventual consistency** -- MongoDB transactions guard local state, while async events propagate changes across services
+- **Real-time push** -- WebSocket connections deliver order status updates to the browser the moment they happen
+- **Full observability** -- Prometheus metrics, Grafana dashboards, and Loki log aggregation with structured correlation IDs
+- **Dual deployment** -- runs identically on Docker Compose (local) and Kubernetes with Helm (production)
 
 ```{toctree}
 :maxdepth: 2
