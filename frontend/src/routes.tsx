@@ -44,6 +44,12 @@ const devToolsRoute = createRoute({
   component: DevTools,
 });
 
-rootRoute.addChildren([menuRoute, cartRoute, orderRoute, trackerRoute, devToolsRoute]);
+rootRoute.addChildren([
+  menuRoute,
+  cartRoute,
+  orderRoute,
+  trackerRoute,
+  devToolsRoute,
+]);
 
 export const routeTree = rootRoute;
