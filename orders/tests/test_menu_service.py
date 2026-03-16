@@ -28,9 +28,12 @@ def service(menu_repo, mongo_client):
 
 
 def _make_item(**overrides):
-    defaults = {"name": "Burger", "price": 9.99, "category": "food", "stock": 10}
-    defaults.update(overrides)
-    return MenuItemSchema(**defaults)
+    return MenuItemSchema(
+        name=overrides.get("name", "Burger"),
+        price=overrides.get("price", 9.99),
+        category=overrides.get("category", "food"),
+        stock=overrides.get("stock", 10),
+    )
 
 
 @pytest.mark.asyncio

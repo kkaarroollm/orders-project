@@ -49,14 +49,17 @@ def service(order_repo, menu_repo, publisher, mongo_client):
 
 
 def _make_order(**overrides):
-    defaults = {
-        "person": OrderingPersonSchema(
-            first_name="John", last_name="Doe", address="123 Main St", phone_number="555-1234"
+    return OrderSchema(
+        person=overrides.get(
+            "person",
+            OrderingPersonSchema(
+                first_name="John", last_name="Doe", address="123 Main St", phone_number="555-1234"
+            ),
         ),
-        "items": [OrderedItemSchema(item_id="507f1f77bcf86cd799439011", quantity=2)],
-    }
-    defaults.update(overrides)
-    return OrderSchema(**defaults)
+        items=overrides.get(
+            "items", [OrderedItemSchema(item_id="507f1f77bcf86cd799439011", quantity=2)]
+        ),
+    )
 
 
 @pytest.mark.asyncio
