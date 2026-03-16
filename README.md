@@ -188,7 +188,7 @@ The project includes a full observability stack:
 | Frontend                    | http://localhost                      | —               |
 | Dev Tools page              | http://localhost/dev                  | —               |
 | Grafana                     | http://localhost/grafana/             | admin / admin   |
-| Prometheus                  | http://localhost:9090                 | —               |
+| Prometheus (read-only)      | http://localhost/prometheus/          | —               |
 | Order Service — API Docs    | http://localhost:8003/docs            | —               |
 | Delivery Service — API Docs | http://localhost:8001/docs            | —               |
 | Notifications — API Docs    | http://localhost:8002/docs            | —               |

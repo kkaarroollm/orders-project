@@ -17,7 +17,8 @@ const tools = [
   {
     title: 'Prometheus',
     description: 'Metrics collection, PromQL queries & targets',
-    url: 'http://localhost:9090',
+    url: '/prometheus/',
+    badge: 'read-only',
   },
   {
     title: 'Order Service — API Docs',
@@ -72,11 +73,18 @@ const DevTools = () => {
                 </CardTitle>
                 <CardDescription>{tool.description}</CardDescription>
               </CardHeader>
-              {tool.credentials && (
-                <CardContent>
-                  <code className="text-xs bg-muted px-2 py-1 rounded">
-                    {tool.credentials}
-                  </code>
+              {(tool.credentials || tool.badge) && (
+                <CardContent className="flex gap-2">
+                  {tool.credentials && (
+                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                      {tool.credentials}
+                    </code>
+                  )}
+                  {tool.badge && (
+                    <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
+                      {tool.badge}
+                    </span>
+                  )}
                 </CardContent>
               )}
             </Card>
