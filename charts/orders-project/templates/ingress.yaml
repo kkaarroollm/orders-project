@@ -40,6 +40,14 @@ spec:
                 port:
                   number: 8002
 
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: orders-project-kube-prometh-grafana
+                port:
+                  number: 80
+
           - path: /
             pathType: Prefix
             backend:
