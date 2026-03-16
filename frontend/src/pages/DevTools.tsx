@@ -21,6 +21,12 @@ const tools = [
     badge: 'read-only',
   },
   {
+    title: 'Grafana — Event Pipeline',
+    description: 'Stream throughput, processing latency & dead-letter queue',
+    url: '/grafana/d/event-pipeline/event-pipeline',
+    badge: 'read-only',
+  },
+  {
     title: 'Grafana',
     description: 'All dashboards, explore & admin',
     url: '/grafana/',
