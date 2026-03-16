@@ -8,5 +8,6 @@ myst_enable_extensions = ["colon_fence", "deflist"]
 html_theme = "furo"
 html_title = "Orders Project"
 html_static_path = []
+html_extra_path = ["CNAME"]
 
 exclude_patterns = ["_build"]
