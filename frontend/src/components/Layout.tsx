@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Wrench } from 'lucide-react';
 import { ModeToggle } from './mode-toggle';
 
 const Layout = ({ children }: { children?: ReactNode }) => {
@@ -12,6 +12,9 @@ const Layout = ({ children }: { children?: ReactNode }) => {
         </h1>
         <div className="flex items-center gap-4">
           <ModeToggle />
+          <Link to="/dev">
+            <Wrench className="h-5 w-5 hover:text-blue-500 transition" />
+          </Link>
           <Link to="/cart">
             <ShoppingCart className="h-6 w-6 hover:text-blue-500 transition" />
           </Link>
