@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "order-service"
+    static_configs:
+      - targets: ["order-service:8003"]
+
+  - job_name: "delivery-service"
+    static_configs:
+      - targets: ["delivery-service:8001"]
+
+  - job_name: "notifications-service"
+    static_configs:
+      - targets: ["notifications-service:8002"]
+
+  - job_name: "order-simulator"
+    static_configs:
+      - targets: ["order-simulator:9090"]

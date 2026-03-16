@@ -12,11 +12,21 @@ class OrderSimulationStrategy:
     async def process(self, entity_id: str, producer: StreamProducer[Any], output_stream: str) -> None:
         logging.info("Starting ORDER simulation for %s", entity_id)
         await asyncio.sleep(settings.order_confirming_delay)
-        await producer.publish_raw(output_stream, {"id": entity_id, "status": OrderStatus.PREPARING})
+        await producer.publish_raw(
+            output_stream,
+            {"id": entity_id, "status": OrderStatus.PREPARING},
+            event_type="order.status_simulated",
+            correlation_id=entity_id,
+        )
         logging.info("Order %s -> %s", entity_id, OrderStatus.PREPARING)
 
         await asyncio.sleep(settings.order_preparing_delay)
-        await producer.publish_raw(output_stream, {"id": entity_id, "status": OrderStatus.OUT_FOR_DELIVERY})
+        await producer.publish_raw(
+            output_stream,
+            {"id": entity_id, "status": OrderStatus.OUT_FOR_DELIVERY},
+            event_type="order.status_simulated",
+            correlation_id=entity_id,
+        )
         logging.info("Order %s -> %s", entity_id, OrderStatus.OUT_FOR_DELIVERY)
 
 
@@ -24,11 +34,21 @@ class DeliverySimulationStrategy:
     async def process(self, entity_id: str, producer: StreamProducer[Any], output_stream: str) -> None:
         logging.info("Starting DELIVERY simulation for %s", entity_id)
         await asyncio.sleep(settings.delivery_waiting_delay)
-        await producer.publish_raw(output_stream, {"id": entity_id, "status": DeliveryStatus.ON_THE_WAY})
+        await producer.publish_raw(
+            output_stream,
+            {"id": entity_id, "status": DeliveryStatus.ON_THE_WAY},
+            event_type="delivery.status_simulated",
+            correlation_id=entity_id,
+        )
         logging.info("Delivery %s -> %s", entity_id, DeliveryStatus.ON_THE_WAY)
 
         await asyncio.sleep(settings.delivery_way_delay)
-        await producer.publish_raw(output_stream, {"id": entity_id, "status": DeliveryStatus.DELIVERED})
+        await producer.publish_raw(
+            output_stream,
+            {"id": entity_id, "status": DeliveryStatus.DELIVERED},
+            event_type="delivery.status_simulated",
+            correlation_id=entity_id,
+        )
         logging.info("Delivery %s -> %s", entity_id, DeliveryStatus.DELIVERED)
 
 

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     delivery_status_stream: str = "delivery-status-stream"
 
     simulator_group: str = "simulator-group"
+    metrics_port: int = 9090
 
     order_confirming_delay: int = 20
     order_preparing_delay: int = 200

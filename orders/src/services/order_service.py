@@ -52,10 +52,15 @@ class OrderService(TransactionServiceMixin):
             order_id_str = await self._order_repo.create(order_data, session)
             order_data.id = order_id_str
 
-        await self._publisher.publish_raw(settings.orders_stream, order_data.model_dump(mode="json"))
+        order_dump = order_data.model_dump(mode="json")
+        await self._publisher.publish_raw(
+            settings.orders_stream, order_dump, event_type="order.created", correlation_id=order_id_str
+        )
 
         if order_data.simulation != -1:
-            await self._publisher.publish_raw(settings.simulate_order_stream, order_data.model_dump(mode="json"))
+            await self._publisher.publish_raw(
+                settings.simulate_order_stream, order_dump, event_type="order.simulate", correlation_id=order_id_str
+            )
             logging.info("Simulating order %s", order_id_str)
 
         return OrderResponse(order=order_data, success=True)
@@ -65,7 +70,12 @@ class OrderService(TransactionServiceMixin):
             updated = await self._order_repo.update_status(order_id, new_status, session)
 
         if updated:
-            await self._publisher.publish_raw(settings.orders_stream, {"id": order_id, "status": new_status.value})
+            await self._publisher.publish_raw(
+                settings.orders_stream,
+                {"id": order_id, "status": new_status.value},
+                event_type="order.status_updated",
+                correlation_id=order_id,
+            )
             return OrderResponse(order=None, success=True, message=f"Order {order_id} updated to {new_status}")
 
         return OrderResponse(order=None, success=False, message="Order not found or update failed")

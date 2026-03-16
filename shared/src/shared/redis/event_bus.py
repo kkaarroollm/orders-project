@@ -22,11 +22,20 @@ class _Subscription(Generic[T]):
 
 
 class EventBus:
-    """Lightweight wrapper around StreamConsumer that manages subscriptions and task lifecycle."""
+    """Manages stream subscriptions with retry, DLQ, and graceful lifecycle."""
 
-    def __init__(self, redis: Redis, *, group: str) -> None:
+    def __init__(
+        self,
+        redis: Redis,
+        *,
+        group: str,
+        max_retries: int = 3,
+        dlq_stream: str | None = "dead-letters",
+    ) -> None:
         self._redis = redis
         self._group = group
+        self._max_retries = max_retries
+        self._dlq_stream = dlq_stream
         self._consumer_name = f"{group}-{socket.gethostname()}-{uuid.uuid4().hex[:6]}"
         self._subscriptions: list[_Subscription[Any]] = []
         self._tasks: list[asyncio.Task[None]] = []
@@ -42,6 +51,8 @@ class EventBus:
                 group=self._group,
                 consumer_name=self._consumer_name,
                 message_type=sub.model,
+                max_retries=self._max_retries,
+                dlq_stream=self._dlq_stream,
             )
             task = asyncio.create_task(consumer.listen(sub.handler))
             self._tasks.append(task)

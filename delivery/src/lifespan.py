@@ -21,7 +21,7 @@ async def startup(app: FastAPI) -> None:
         collection=app.state.database.get_collection(settings.mongo_collection_deliveries),
     )
 
-    publisher: StreamProducer[Any] = StreamProducer(app.state.redis_client)
+    publisher: StreamProducer[Any] = StreamProducer(app.state.redis_client, source="delivery-service")
     app.state.delivery_service = DeliveryService(repo=app.state.delivery_repo, publisher=publisher)
 
     await setup_streams(app)
