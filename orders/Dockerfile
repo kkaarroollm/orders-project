@@ -1,17 +1,17 @@
 FROM python:3.13 AS base
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-WORKDIR /app
+WORKDIR /workspace
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-COPY orders/pyproject.toml orders/uv.lock orders/.python-version ./
-COPY shared /shared
+COPY pyproject.toml uv.lock ./
+COPY shared ./shared
+COPY orders ./orders
 
 FROM base AS development
 
-COPY orders/ .
-
+WORKDIR /workspace/orders
 RUN uv sync --frozen --no-cache
 
 EXPOSE 8003
@@ -20,8 +20,7 @@ CMD ["uv", "run", "fastapi", "dev", "src/main.py", "--proxy-headers", "--port", 
 
 FROM base AS production
 
-COPY orders/ .
-
+WORKDIR /workspace/orders
 RUN uv sync --frozen --no-cache --no-dev
 
 EXPOSE 8003

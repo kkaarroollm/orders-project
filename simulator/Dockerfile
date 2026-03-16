@@ -1,16 +1,15 @@
 FROM python:3.13
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+WORKDIR /workspace
 
-WORKDIR /app
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PYTHONPATH=/workspace/simulator
 
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PYTHONPATH=/app
+COPY pyproject.toml uv.lock ./
+COPY shared ./shared
+COPY simulator ./simulator
 
-COPY simulator/pyproject.toml simulator/uv.lock simulator/.python-version ./
-COPY shared /shared
-
+WORKDIR /workspace/simulator
 RUN uv sync --frozen --no-cache
-
-COPY simulator/ .
 
 CMD ["uv", "run", "python", "src/main.py"]

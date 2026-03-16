@@ -78,7 +78,7 @@ services:
       dockerfile: orders/Dockerfile
       target: development
     container_name: order-service
-    working_dir: /app
+    working_dir: /workspace/orders
     env_file:
       - envs/${DEPLOY_ENV:-dev}/mongo.env
       - envs/${DEPLOY_ENV:-dev}/redis.env
@@ -86,8 +86,8 @@ services:
       - DEBUG=true
       - CORS_ALLOW_ORIGINS=["http://localhost","http://localhost:3000"]
     volumes:
-      - ./orders:/app
-      - ./shared:/shared
+      - ./orders:/workspace/orders
+      - ./shared:/workspace/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/api/v1/health/readiness"]
       interval: 10s
@@ -110,15 +110,15 @@ services:
       dockerfile: delivery/Dockerfile
       target: development
     container_name: delivery-service
-    working_dir: /app
+    working_dir: /workspace/delivery
     env_file:
       - envs/${DEPLOY_ENV:-dev}/mongo.env
       - envs/${DEPLOY_ENV:-dev}/redis.env
     environment:
       - DEBUG=true
     volumes:
-      - ./delivery:/app
-      - ./shared:/shared
+      - ./delivery:/workspace/delivery
+      - ./shared:/workspace/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health/readiness"]
       interval: 10s
@@ -141,15 +141,15 @@ services:
       dockerfile: notifications/Dockerfile
       target: development
     container_name: notifications-service
-    working_dir: /app
+    working_dir: /workspace/notifications
     env_file:
       - envs/${DEPLOY_ENV:-dev}/redis.env
     environment:
       - DEBUG=true
       - CORS_ALLOW_ORIGINS=["http://localhost","http://localhost:3000"]
     volumes:
-      - ./notifications:/app
-      - ./shared:/shared
+      - ./notifications:/workspace/notifications
+      - ./shared:/workspace/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/api/v1/health/readiness"]
       interval: 10s
@@ -169,10 +169,10 @@ services:
       context: .
       dockerfile: simulator/Dockerfile
     container_name: order-simulator
-    working_dir: /app
+    working_dir: /workspace/simulator
     volumes:
-      - ./simulator:/app
-      - ./shared:/shared
+      - ./simulator:/workspace/simulator
+      - ./shared:/workspace/shared
     env_file:
       - envs/${DEPLOY_ENV:-dev}/redis.env
       - envs/${DEPLOY_ENV:-dev}/simulator.env

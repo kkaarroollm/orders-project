@@ -19,7 +19,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-shared = { path = "../shared" }
+shared = { workspace = true }
 
 [tool.ty.environment]
 python-version = "3.13"
