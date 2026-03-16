@@ -14,6 +14,7 @@
         "query": "label_values(compose_service)",
         "refresh": 2,
         "includeAll": true,
+        "allValue": ".+",
         "current": { "text": "All", "value": "$__all" }
       },
       {

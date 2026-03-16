@@ -233,6 +233,8 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--web.external-url=http://localhost/prometheus/"
       - "--web.route-prefix=/"
+      - "--storage.tsdb.retention.time=3d"
+      - "--storage.tsdb.retention.size=256MB"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
