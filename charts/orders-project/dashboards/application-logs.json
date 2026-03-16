@@ -11,7 +11,7 @@
         "name": "service",
         "type": "query",
         "datasource": { "type": "loki", "uid": "" },
-        "query": "label_values(compose_service)",
+        "query": "label_values(container)",
         "refresh": 2,
         "includeAll": true,
         "allValue": ".+",
@@ -34,8 +34,8 @@
       "datasource": { "type": "loki", "uid": "" },
       "targets": [
         {
-          "expr": "sum(count_over_time({compose_service=~\"$service\"} |~ \"$search\" [1m])) by (compose_service)",
-          "legendFormat": "{{ compose_service }}"
+          "expr": "sum(count_over_time({container=~\"$service\"} |~ \"$search\" [1m])) by (container)",
+          "legendFormat": "{{ container }}"
         }
       ],
       "fieldConfig": {
@@ -53,8 +53,8 @@
       "datasource": { "type": "loki", "uid": "" },
       "targets": [
         {
-          "expr": "sum(count_over_time({compose_service=~\"$service\"} |~ \"(?i)(error|exception|traceback)\" [1m])) by (compose_service)",
-          "legendFormat": "{{ compose_service }}"
+          "expr": "sum(count_over_time({container=~\"$service\"} |~ \"(?i)(error|exception|traceback)\" [1m])) by (container)",
+          "legendFormat": "{{ container }}"
         }
       ],
       "fieldConfig": {
@@ -73,7 +73,7 @@
       "datasource": { "type": "loki", "uid": "" },
       "targets": [
         {
-          "expr": "{compose_service=~\"$service\"} |~ \"$search\"",
+          "expr": "{container=~\"$service\"} |~ \"$search\"",
           "maxLines": 500
         }
       ],
