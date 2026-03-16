@@ -14,7 +14,7 @@ async def close_databases(app: FastAPI) -> None:
     if redis := getattr(app.state, "redis_client", None):
         await redis.close()
     if mongo := getattr(app.state, "mongo_client", None):
-        mongo.close()
+        await mongo.close()
 
 
 __all__ = ["setup_databases", "close_databases"]

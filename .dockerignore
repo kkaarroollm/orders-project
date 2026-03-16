@@ -1,0 +1,13 @@
+.git
+.gitignore
+.claude
+__pycache__
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.venv
+**/.idea
+**/.DS_Store
+shared/build
+shared/src/*.egg-info

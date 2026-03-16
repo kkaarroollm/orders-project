@@ -45,17 +45,15 @@ services:
     volumes:
       - ./scripts/seed-data.js:/seed-data.js:ro
     entrypoint:
-      - mongosh
-      - --host
-      - mongo:27017
-      - -u
-      - root
-      - -p
-      - rootpassword
-      - --authenticationDatabase
-      - admin
-      - food-delivery
-      - /seed-data.js
+      - sh
+      - -c
+      - >-
+        mongosh --host mongo:27017
+        -u "$${MONGO_INITDB_ROOT_USERNAME}"
+        -p "$${MONGO_INITDB_ROOT_PASSWORD}"
+        --authenticationDatabase "$${MONGO_AUTH_DB:-admin}"
+        "$${MONGO_INITDB_DATABASE}"
+        /seed-data.js
     networks:
       - backend_net
 

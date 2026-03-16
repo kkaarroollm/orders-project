@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import socket
 import uuid
 from typing import Any
@@ -51,6 +52,3 @@ async def start_streams(redis: Redis) -> None:
 
     logging.info("Simulation workers started for ORDER and DELIVERY streams")
     await asyncio.gather(order_task, delivery_task)
-
-
-__all__ = ["start_streams"]
