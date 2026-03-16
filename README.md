@@ -183,15 +183,19 @@ The project includes a full observability stack:
 
 ### Quick Links (Docker Compose)
 
-| Tool                        | URL                                  | Credentials     |
-|-----------------------------|--------------------------------------|-----------------|
-| Frontend                    | http://localhost                      | —               |
-| Dev Tools page              | http://localhost/dev                  | —               |
-| Grafana                     | http://localhost/grafana/             | admin / admin   |
-| Prometheus (read-only)      | http://localhost/prometheus/          | —               |
-| Order Service — API Docs    | http://localhost:8003/docs            | —               |
-| Delivery Service — API Docs | http://localhost:8001/docs            | —               |
-| Notifications — API Docs    | http://localhost:8002/docs            | —               |
+| Tool                        | URL                                          | Credentials     |
+|-----------------------------|----------------------------------------------|-----------------|
+| Frontend                    | http://localhost                               | —               |
+| Dev Tools page              | http://localhost/dev                           | —               |
+| Grafana (admin)             | http://localhost/grafana/                      | admin / admin   |
+| HTTP Metrics dashboard      | http://localhost/grafana/d/http-metrics        | — (read-only)   |
+| Application Logs dashboard  | http://localhost/grafana/d/application-logs    | — (read-only)   |
+| Prometheus (read-only)      | http://localhost/prometheus/                   | —               |
+| Order Service — API Docs    | http://localhost:8003/docs                     | —               |
+| Delivery Service — API Docs | http://localhost:8001/docs                     | —               |
+| Notifications — API Docs    | http://localhost:8002/docs                     | —               |
+
+Grafana dashboards are accessible without login (anonymous viewer role). Admin access requires credentials above.
 
 All service OpenAPI docs are available only in `DEVELOPMENT` environment.
 

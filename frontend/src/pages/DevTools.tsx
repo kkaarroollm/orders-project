@@ -9,8 +9,20 @@ import {
 
 const tools = [
   {
+    title: 'Grafana — HTTP Metrics',
+    description: 'Request rate, latency percentiles & error rates',
+    url: '/grafana/d/http-metrics/http-metrics',
+    badge: 'read-only',
+  },
+  {
+    title: 'Grafana — Application Logs',
+    description: 'Live log stream, volume & error tracking (Loki)',
+    url: '/grafana/d/application-logs/application-logs',
+    badge: 'read-only',
+  },
+  {
     title: 'Grafana',
-    description: 'Dashboards, metrics visualization & logs explorer',
+    description: 'All dashboards, explore & admin',
     url: '/grafana/',
     credentials: 'admin / admin',
   },
@@ -34,21 +46,6 @@ const tools = [
     title: 'Notifications Service — API Docs',
     description: 'OpenAPI / Swagger UI for notifications endpoints',
     url: 'http://localhost:8002/docs',
-  },
-  {
-    title: 'Order Service — Metrics',
-    description: 'Raw Prometheus metrics from the order service',
-    url: 'http://localhost:8003/metrics',
-  },
-  {
-    title: 'Delivery Service — Metrics',
-    description: 'Raw Prometheus metrics from the delivery service',
-    url: 'http://localhost:8001/metrics',
-  },
-  {
-    title: 'Notifications Service — Metrics',
-    description: 'Raw Prometheus metrics from the notifications service',
-    url: 'http://localhost:8002/metrics',
   },
 ];
 
