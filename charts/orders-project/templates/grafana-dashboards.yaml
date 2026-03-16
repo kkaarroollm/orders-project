@@ -1,0 +1,19 @@
+{{- $kps := index .Values "kube-prometheus-stack" }}
+{{- if $kps.enabled }}
+{{- range $name := list "http-metrics" "application-logs" "event-pipeline" }}
+{{- $json := $.Files.Get (printf "dashboards/%s.json" $name) }}
+{{- if $json }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    grafana_dashboard: "1"
+data:
+  {{ $name }}.json: |-
+{{ $json | indent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}

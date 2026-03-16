@@ -23,5 +23,14 @@ dependencies:
 - name: notifications
   repository: file://charts/notifications
   version: 0.1.0
-digest: sha256:cbd908b21e9b06f772b6056ebe28b31c296d77684dcf5b84a18504d6023006d1
-generated: "2025-04-21T18:01:33.096097+02:00"
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 69.8.2
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.28.0
+- name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.6
+digest: sha256:4fe1636795f5f08ed9cc02b88b5b434c170422397ebe3ef11177ae781919b982
+generated: "2026-03-16T21:34:59.42489+01:00"
