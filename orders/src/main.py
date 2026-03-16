@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import make_asgi_app
+from shared.http_metrics import PrometheusMiddleware
 
 from src.lifespan import startup, teardown
 from src.routes import router
@@ -31,8 +32,9 @@ app: FastAPI = FastAPI(
 
 app.include_router(router)
 
-Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+app.mount("/metrics", make_asgi_app())
 
+app.add_middleware(PrometheusMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(GZipMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(
     CORSMiddleware,  # ty: ignore[invalid-argument-type]

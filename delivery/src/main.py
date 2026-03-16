@@ -2,7 +2,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import make_asgi_app
+from shared.http_metrics import PrometheusMiddleware
 
 from src.lifespan import startup, teardown
 from src.routes import router
@@ -25,4 +26,6 @@ app = FastAPI(
 
 app.include_router(router)
 
-Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+app.mount("/metrics", make_asgi_app())
+
+app.add_middleware(PrometheusMiddleware)  # ty: ignore[invalid-argument-type]

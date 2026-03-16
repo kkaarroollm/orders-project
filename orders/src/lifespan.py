@@ -5,43 +5,55 @@ from fastapi import FastAPI
 from shared.logging import setup_logging
 from shared.redis.publisher import StreamProducer
 
-from src.databases import close_databases, setup_databases
+from src.databases import close_databases, connect_databases
 from src.repositories.menu_item_repo import MenuItemRepository
 from src.repositories.order_repository import OrderRepository
 from src.services.menu_service import MenuService
 from src.services.order_service import OrderService
 from src.settings import settings
+from src.state import AppState
 from src.streams import setup_streams, stop_streams
 
 
 async def startup(app: FastAPI) -> None:
-    app.state.ready = False
     setup_logging()
-    await setup_databases(app)
+    mongo_client, database, redis_client = await connect_databases()
 
-    app.state.menu_repository = MenuItemRepository(
-        collection=app.state.database.get_collection(settings.mongo_collection_menu_items),
+    menu_repo = MenuItemRepository(
+        collection=database.get_collection(settings.mongo_collection_menu_items),
     )
-    app.state.order_repository = OrderRepository(
-        collection=app.state.database.get_collection(settings.mongo_collection_orders),
-    )
-
-    publisher: StreamProducer[Any] = StreamProducer(app.state.redis_client, source="orders-service")
-    app.state.menu_service = MenuService(repo=app.state.menu_repository, mongo_client=app.state.mongo_client)
-    app.state.order_service = OrderService(
-        order_repo=app.state.order_repository,
-        menu_repo=app.state.menu_repository,
-        publisher=publisher,
-        mongo_client=app.state.mongo_client,
+    order_repo = OrderRepository(
+        collection=database.get_collection(settings.mongo_collection_orders),
     )
 
-    await setup_streams(app)
-    app.state.ready = True
+    publisher: StreamProducer[Any] = StreamProducer(redis_client, source="orders-service")
+
+    state = AppState(
+        mongo_client=mongo_client,
+        database=database,
+        redis_client=redis_client,
+        menu_repository=menu_repo,
+        order_repository=order_repo,
+        menu_service=MenuService(repo=menu_repo, mongo_client=mongo_client),
+        order_service=OrderService(
+            order_repo=order_repo,
+            menu_repo=menu_repo,
+            publisher=publisher,
+            mongo_client=mongo_client,
+        ),
+    )
+
+    await setup_streams(state)
+    state.ready = True
+    app.state.ctx = state
     logging.info("Orders service is ready.")
 
 
 async def teardown(app: FastAPI) -> None:
-    app.state.ready = False
-    await stop_streams(app)
-    await close_databases(app)
+    state: AppState | None = getattr(app.state, "ctx", None)
+    if not state:
+        return
+    state.ready = False
+    await stop_streams(state)
+    await close_databases(mongo_client=state.mongo_client, redis_client=state.redis_client)
     logging.info("Orders service is shut down.")
