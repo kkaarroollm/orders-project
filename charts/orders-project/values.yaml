@@ -42,6 +42,9 @@ kube-prometheus-stack:
       server:
         root_url: "%(protocol)s://%(domain)s/grafana/"
         serve_from_sub_path: true
+      auth.anonymous:
+        enabled: true
+        org_role: Viewer
     additionalDataSources:
       - name: Loki
         type: loki
@@ -51,6 +54,8 @@ kube-prometheus-stack:
   prometheus:
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false
+      retention: 3d
+      retentionSize: 256MB
 
 loki:
   enabled: true
@@ -59,6 +64,10 @@ loki:
     auth_enabled: false
     commonConfig:
       replication_factor: 1
+    limits_config:
+      retention_period: 72h
+      ingestion_rate_mb: 4
+      ingestion_burst_size_mb: 8
     storage:
       type: filesystem
     schemaConfig:
