@@ -5,9 +5,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
 from prometheus_client import make_asgi_app
-from shared.http_metrics import PrometheusMiddleware
+from shared.http_metrics import GZipMiddleware, PrometheusMiddleware
 
 from src.lifespan import startup, teardown
 from src.routes import router

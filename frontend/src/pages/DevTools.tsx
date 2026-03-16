@@ -9,15 +9,28 @@ import {
 
 const tools = [
   {
+    title: 'Grafana — HTTP Metrics',
+    description: 'Request rate, latency percentiles & error rates',
+    url: '/grafana/d/http-metrics/http-metrics',
+    badge: 'read-only',
+  },
+  {
+    title: 'Grafana — Application Logs',
+    description: 'Live log stream, volume & error tracking (Loki)',
+    url: '/grafana/d/application-logs/application-logs',
+    badge: 'read-only',
+  },
+  {
     title: 'Grafana',
-    description: 'Dashboards, metrics visualization & logs explorer',
+    description: 'All dashboards, explore & admin',
     url: '/grafana/',
     credentials: 'admin / admin',
   },
   {
     title: 'Prometheus',
     description: 'Metrics collection, PromQL queries & targets',
-    url: 'http://localhost:9090',
+    url: '/prometheus/',
+    badge: 'read-only',
   },
   {
     title: 'Order Service — API Docs',
@@ -33,21 +46,6 @@ const tools = [
     title: 'Notifications Service — API Docs',
     description: 'OpenAPI / Swagger UI for notifications endpoints',
     url: 'http://localhost:8002/docs',
-  },
-  {
-    title: 'Order Service — Metrics',
-    description: 'Raw Prometheus metrics from the order service',
-    url: 'http://localhost:8003/metrics',
-  },
-  {
-    title: 'Delivery Service — Metrics',
-    description: 'Raw Prometheus metrics from the delivery service',
-    url: 'http://localhost:8001/metrics',
-  },
-  {
-    title: 'Notifications Service — Metrics',
-    description: 'Raw Prometheus metrics from the notifications service',
-    url: 'http://localhost:8002/metrics',
   },
 ];
 
@@ -72,11 +70,18 @@ const DevTools = () => {
                 </CardTitle>
                 <CardDescription>{tool.description}</CardDescription>
               </CardHeader>
-              {tool.credentials && (
-                <CardContent>
-                  <code className="text-xs bg-muted px-2 py-1 rounded">
-                    {tool.credentials}
-                  </code>
+              {(tool.credentials || tool.badge) && (
+                <CardContent className="flex gap-2">
+                  {tool.credentials && (
+                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                      {tool.credentials}
+                    </code>
+                  )}
+                  {tool.badge && (
+                    <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
+                      {tool.badge}
+                    </span>
+                  )}
                 </CardContent>
               )}
             </Card>

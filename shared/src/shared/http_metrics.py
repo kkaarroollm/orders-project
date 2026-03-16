@@ -2,6 +2,7 @@ import time
 from collections.abc import MutableMapping
 from typing import Any
 
+from fastapi.middleware.gzip import GZipMiddleware as _GZipMiddleware
 from prometheus_client import Counter, Histogram
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -45,3 +46,17 @@ class PrometheusMiddleware:
             duration = time.perf_counter() - start
             HTTP_REQUESTS_TOTAL.labels(method, path, str(status_code)).inc()
             HTTP_REQUEST_DURATION.labels(method, path).observe(duration)
+
+
+class GZipMiddleware:
+    """GZipMiddleware that skips /metrics to avoid breaking Prometheus scraping."""
+
+    def __init__(self, app: ASGIApp, **kwargs: Any) -> None:
+        self._gzip = _GZipMiddleware(app, **kwargs)
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope.get("path", "").startswith("/metrics"):
+            await self._app(scope, receive, send)
+        else:
+            await self._gzip(scope, receive, send)
