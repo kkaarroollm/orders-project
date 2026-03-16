@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.config import settings
+from src.settings import settings
 
 
 class SimulationStream(Enum):

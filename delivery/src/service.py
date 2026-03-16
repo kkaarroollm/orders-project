@@ -3,15 +3,15 @@ from typing import Any, Final
 
 from shared.redis.publisher import StreamProducer
 
-from src.config import settings
-from src.interfaces import DeliveryRepositoryProtocol
+from src.repository import DeliveryRepository
 from src.schemas import DeliverySchema, DeliveryStatus
+from src.settings import settings
 
 
 class DeliveryService:
     OUT_FOR_DELIVERY: Final = "out_for_delivery"
 
-    def __init__(self, repo: DeliveryRepositoryProtocol, publisher: StreamProducer[Any]) -> None:
+    def __init__(self, repo: DeliveryRepository, publisher: StreamProducer[Any]) -> None:
         self._repo = repo
         self._publisher = publisher
 

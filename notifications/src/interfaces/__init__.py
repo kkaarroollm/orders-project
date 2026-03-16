@@ -1,3 +1,0 @@
-from src.interfaces.notification_repo_interface import NotificationRepositoryProtocol
-from src.interfaces.notification_service_interface import NotificationServiceProtocol
-from src.interfaces.order_status_ws_interface import OrderStatusConnectionManagerProtocol

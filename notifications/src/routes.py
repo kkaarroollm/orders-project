@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Request, Response, status
 
-router = APIRouter(prefix="/health", tags=["health"])
+router = APIRouter(prefix="/api/v1")
 
 
-@router.get("/liveness")
+@router.get("/health/liveness")
 async def liveness() -> Response:
     return Response(content='{"status":"ok"}', media_type="application/json")
 
 
-@router.get("/readiness")
+@router.get("/health/readiness")
 async def readiness(request: Request) -> Response:
     if not getattr(request.app.state, "ready", False):
         return Response(

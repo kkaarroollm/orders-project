@@ -7,9 +7,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import router
+from src.settings import settings
 from src.websockets import ws_order_status_manager
 
 
@@ -63,9 +63,9 @@ async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
 
 app.include_router(router)
 
-app.add_middleware(GZipMiddleware)
+app.add_middleware(GZipMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # ty: ignore[invalid-argument-type]
     allow_origins=settings.cors_allow_origins,
     allow_credentials=settings.cors_allow_credentials,
     allow_methods=settings.cors_allow_methods,

@@ -1,10 +1,12 @@
-from shared.settings import BaseServiceSettings
+from shared.settings import BaseServiceSettings, EnvironmentEnum
+
+__all__ = ["EnvironmentEnum", "settings"]
 
 
 class Settings(BaseServiceSettings):
     title: str = "Orders Service"
     version: str = "1.0.0"
-    contact_name: str = "kkaarroollm"  # noqa
+    contact_name: str = "kkaarroollm"  # noqa: N815
     contact_email: str = "mkarol.4514@gmail.com"
 
     mongo_collection_orders: str = "orders"

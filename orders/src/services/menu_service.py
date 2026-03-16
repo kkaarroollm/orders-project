@@ -1,12 +1,12 @@
 from pymongo import AsyncMongoClient
 
-from src.interfaces import MenuItemRepositoryProtocol
+from src.repositories.menu_item_repo import MenuItemRepository
 from src.schemas import MenuItemSchema
 from src.services.mixins import TransactionServiceMixin
 
 
 class MenuService(TransactionServiceMixin):
-    def __init__(self, repo: MenuItemRepositoryProtocol, mongo_client: AsyncMongoClient) -> None:
+    def __init__(self, repo: MenuItemRepository, mongo_client: AsyncMongoClient) -> None:
         super().__init__(mongo_client)
         self._repo = repo
 

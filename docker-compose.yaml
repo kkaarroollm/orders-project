@@ -16,7 +16,7 @@ services:
       - mongo_data:/data/db
       - ./envs/mongo-keyfile:/etc/mongo-keyfile:ro
     env_file:
-      - envs/mongo_db.env
+      - envs/${DEPLOY_ENV:-dev}/mongo.env
     networks:
       - backend_net
 
@@ -27,7 +27,7 @@ services:
       mongo:
         condition: service_healthy
     env_file:
-      - envs/mongo_db.env
+      - envs/${DEPLOY_ENV:-dev}/mongo.env
     volumes:
       - ./scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
     entrypoint: ["/docker-entrypoint-initdb.d/init-replica.sh"]
@@ -41,7 +41,7 @@ services:
       mongo-init-replica:
         condition: service_completed_successfully
     env_file:
-      - envs/mongo_db.env
+      - envs/${DEPLOY_ENV:-dev}/mongo.env
     volumes:
       - ./scripts/seed-data.js:/seed-data.js:ro
     entrypoint:
@@ -78,16 +78,16 @@ services:
       dockerfile: orders/Dockerfile
       target: development
     container_name: order-service
-    working_dir: /app
+    working_dir: /workspace/orders
     env_file:
-      - envs/mongo_db.env
-      - envs/redis.env
+      - envs/${DEPLOY_ENV:-dev}/mongo.env
+      - envs/${DEPLOY_ENV:-dev}/redis.env
     environment:
       - DEBUG=true
       - CORS_ALLOW_ORIGINS=["http://localhost","http://localhost:3000"]
     volumes:
-      - ./orders:/app
-      - ./shared:/shared
+      - ./orders:/workspace/orders
+      - ./shared:/workspace/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/api/v1/health/readiness"]
       interval: 10s
@@ -110,15 +110,15 @@ services:
       dockerfile: delivery/Dockerfile
       target: development
     container_name: delivery-service
-    working_dir: /app
+    working_dir: /workspace/delivery
     env_file:
-      - envs/mongo_db.env
-      - envs/redis.env
+      - envs/${DEPLOY_ENV:-dev}/mongo.env
+      - envs/${DEPLOY_ENV:-dev}/redis.env
     environment:
       - DEBUG=true
     volumes:
-      - ./delivery:/app
-      - ./shared:/shared
+      - ./delivery:/workspace/delivery
+      - ./shared:/workspace/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health/readiness"]
       interval: 10s
@@ -141,15 +141,15 @@ services:
       dockerfile: notifications/Dockerfile
       target: development
     container_name: notifications-service
-    working_dir: /app
+    working_dir: /workspace/notifications
     env_file:
-      - envs/redis.env
+      - envs/${DEPLOY_ENV:-dev}/redis.env
     environment:
       - DEBUG=true
       - CORS_ALLOW_ORIGINS=["http://localhost","http://localhost:3000"]
     volumes:
-      - ./notifications:/app
-      - ./shared:/shared
+      - ./notifications:/workspace/notifications
+      - ./shared:/workspace/shared
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/api/v1/health/readiness"]
       interval: 10s
@@ -169,13 +169,13 @@ services:
       context: .
       dockerfile: simulator/Dockerfile
     container_name: order-simulator
-    working_dir: /app
+    working_dir: /workspace/simulator
     volumes:
-      - ./simulator:/app
-      - ./shared:/shared
+      - ./simulator:/workspace/simulator
+      - ./shared:/workspace/shared
     env_file:
-      - envs/redis.env
-      - envs/simulator.env
+      - envs/${DEPLOY_ENV:-dev}/redis.env
+      - envs/${DEPLOY_ENV:-dev}/simulator.env
     depends_on:
       order-service:
         condition: service_healthy
@@ -213,7 +213,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.${DEPLOY_ENV:-dev}.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       order-service:
         condition: service_healthy
