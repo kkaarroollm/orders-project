@@ -6,11 +6,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import make_asgi_app
+from shared.http_metrics import PrometheusMiddleware
 
 from src.lifespan import startup, teardown
 from src.routes import router
 from src.settings import settings
+from src.state import AppState
 from src.websockets import ws_order_status_manager
 
 
@@ -36,7 +38,8 @@ app: FastAPI = FastAPI(
 @app.websocket("/ws/v1/order-tracking/{order_id}")
 async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
     await ws_order_status_manager.connect(order_id, websocket)
-    notifications_repo = app.state.notification_repository
+    state: AppState = app.state.ctx
+    notifications_repo = state.notification_repository
 
     if status := await notifications_repo.get_order_status(order_id):
         try:
@@ -64,8 +67,9 @@ async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
 
 app.include_router(router)
 
-Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+app.mount("/metrics", make_asgi_app())
 
+app.add_middleware(PrometheusMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(GZipMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(
     CORSMiddleware,  # ty: ignore[invalid-argument-type]

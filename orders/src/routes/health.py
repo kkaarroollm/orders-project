@@ -10,7 +10,8 @@ async def liveness() -> Response:
 
 @router.get("/readiness")
 async def readiness(request: Request) -> Response:
-    if not getattr(request.app.state, "ready", False):
+    ctx = getattr(request.app.state, "ctx", None)
+    if not ctx or not ctx.ready:
         return Response(
             content='{"status":"not ready"}',
             media_type="application/json",
