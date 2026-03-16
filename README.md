@@ -190,6 +190,7 @@ The project includes a full observability stack:
 | Grafana (admin)             | http://localhost/grafana/                      | admin / admin   |
 | HTTP Metrics dashboard      | http://localhost/grafana/d/http-metrics        | — (read-only)   |
 | Application Logs dashboard  | http://localhost/grafana/d/application-logs    | — (read-only)   |
+| Event Pipeline dashboard    | http://localhost/grafana/d/event-pipeline       | — (read-only)   |
 | Prometheus (read-only)      | http://localhost/prometheus/                   | —               |
 | Order Service — API Docs    | http://localhost:8003/docs                     | —               |
 | Delivery Service — API Docs | http://localhost:8001/docs                     | —               |

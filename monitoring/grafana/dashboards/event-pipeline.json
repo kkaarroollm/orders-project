@@ -1,0 +1,187 @@
+{
+  "uid": "event-pipeline",
+  "title": "Event Pipeline",
+  "tags": ["prometheus", "streams", "pipeline"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "stream",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "" },
+        "query": "label_values(stream_messages_processed_total, stream)",
+        "refresh": 2,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "group",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "" },
+        "query": "label_values(stream_messages_processed_total, group)",
+        "refresh": 2,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Message Throughput (msg/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "sum(rate(stream_messages_processed_total{stream=~\"$stream\", group=~\"$group\"}[1m])) by (stream)",
+          "legendFormat": "{{ stream }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": { "drawStyle": "line", "fillOpacity": 15 }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Error Rate by Stream",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "sum(rate(stream_messages_processed_total{stream=~\"$stream\", group=~\"$group\", status=\"error\"}[1m])) by (stream, group)",
+          "legendFormat": "{{ stream }} / {{ group }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": { "drawStyle": "line", "fillOpacity": 10 },
+          "color": { "mode": "fixed", "fixedColor": "red" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Processing Latency (p50 / p95 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(stream_message_duration_seconds_bucket{stream=~\"$stream\", group=~\"$group\"}[1m])) by (le, stream))",
+          "legendFormat": "p50 {{ stream }}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(stream_message_duration_seconds_bucket{stream=~\"$stream\", group=~\"$group\"}[1m])) by (le, stream))",
+          "legendFormat": "p95 {{ stream }}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(stream_message_duration_seconds_bucket{stream=~\"$stream\", group=~\"$group\"}[1m])) by (le, stream))",
+          "legendFormat": "p99 {{ stream }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "drawStyle": "line", "fillOpacity": 5 }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Dead-Letter Queue Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "sum(rate(stream_dlq_messages_total{stream=~\"$stream\", group=~\"$group\"}[1m])) by (stream, group)",
+          "legendFormat": "{{ stream }} / {{ group }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": { "drawStyle": "line", "fillOpacity": 10 },
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Success Rate",
+      "type": "gauge",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "sum(stream_messages_processed_total{stream=~\"$stream\", group=~\"$group\", status=\"success\"}) / sum(stream_messages_processed_total{stream=~\"$stream\", group=~\"$group\"}) * 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 90, "color": "yellow" },
+              { "value": 99, "color": "green" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Total DLQ Messages",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "sum(stream_dlq_messages_total{stream=~\"$stream\", group=~\"$group\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 1, "color": "orange" },
+              { "value": 10, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Messages by Consumer Group",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "expr": "sum(rate(stream_messages_processed_total{stream=~\"$stream\", group=~\"$group\"}[1m])) by (group)",
+          "legendFormat": "{{ group }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": { "drawStyle": "bars", "fillOpacity": 50, "stacking": { "mode": "normal" } }
+        }
+      }
+    }
+  ],
+  "schemaVersion": 39
+}
