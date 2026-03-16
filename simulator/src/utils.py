@@ -20,10 +20,10 @@ async def handle_simulation_event(
         logging.warning("No simulation strategy found for stream: %s", stream)
         return
 
-    logging.info("Received simulation event for `%s` on `%s`", data.get("id"), stream.listen_stream)
+    logging.info("Received simulation event for `%s` on `%s`", data.get("id"), stream.source)
 
     async def run() -> None:
         async with SEMAPHORE:
-            await strategy.process(entity_id=data["id"], producer=producer, output_stream=stream.send_stream)
+            await strategy.process(entity_id=data["id"], producer=producer, output_stream=stream.target)
 
     asyncio.create_task(run())

@@ -15,23 +15,24 @@ class DeliveryService:
         self._repo = repo
         self._publisher = publisher
 
-    async def handle_order(self, order_data: dict[str, Any]) -> None:
-        if order_data.get("status") != self.OUT_FOR_DELIVERY:
-            logging.info("Skipping order %s, status not '%s'", order_data.get("id"), self.OUT_FOR_DELIVERY)
+    async def handle_order(self, msg: Any) -> None:
+        if msg.status != self.OUT_FOR_DELIVERY:
+            logging.info("Skipping order %s, status not '%s'", msg.id, self.OUT_FOR_DELIVERY)
             return
 
-        delivery = DeliverySchema(order_id=order_data["id"])
+        delivery = DeliverySchema(order_id=msg.id)
         delivery_id = await self._repo.create(delivery)
         logging.info("Created delivery %s", delivery_id)
 
         await self._publisher.publish_raw(settings.deliveries_stream, delivery.model_dump(mode="json"))
 
-        if order_data.get("simulator") != -1:
-            await self._publisher.publish_raw(settings.simulate_delivery_stream, order_data)
+        if getattr(msg, "simulation", 1) != -1:
+            await self._publisher.publish_raw(settings.simulate_delivery_stream, msg.model_dump(mode="json"))
             logging.info("Simulating delivery for %s", delivery_id)
 
-    async def handle_status_update(self, status_data: dict[str, Any]) -> None:
-        if not (order_id := status_data.get("order_id") or status_data.get("id")):
+    async def handle_status_update(self, msg: Any) -> None:
+        order_id = getattr(msg, "order_id", None) or msg.id
+        if not order_id:
             raise ValueError("DeliveryService.handle_status_update: Missing order_id in status update")
 
         delivery = await self._repo.find_one({"order_id": order_id})
@@ -39,7 +40,7 @@ class DeliveryService:
         if not (delivery and delivery.id):
             raise ValueError(f"DeliveryService.handle_status_update: Delivery not found for order_id {order_id}")
 
-        new_status = DeliveryStatus(status_data["status"])
+        new_status = DeliveryStatus(msg.status)
 
         if await self._repo.update_status(delivery.id, new_status):
             delivery.status = new_status

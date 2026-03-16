@@ -11,11 +11,11 @@ class NotificationService:
         self._repo = repo
         self._ws_manager = ws_manager
 
-    async def handle_event(self, data: dict[str, Any]) -> None:
-        order_id = data.get("order_id") or data.get("id")
-        status = data.get("status")
+    async def handle_event(self, msg: Any) -> None:
+        order_id = getattr(msg, "order_id", None) or getattr(msg, "id", None)
+        status = getattr(msg, "status", None)
         if not (order_id and status):
-            raise ValueError(f"NotificationService.handle_event: Invalid data received: {data}")
+            raise ValueError(f"NotificationService.handle_event: Invalid data received: {msg}")
 
         cache = CacheSchema(order_id=order_id, status=status).model_dump(mode="json")
 

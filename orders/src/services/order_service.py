@@ -70,8 +70,7 @@ class OrderService(TransactionServiceMixin):
 
         return OrderResponse(order=None, success=False, message="Order not found or update failed")
 
-    async def handle_status_update(self, data: dict[str, str]) -> None:
-        order_id = data["id"]
-        status = OrderStatus(data["status"])
-        logging.info("Order %s updated to %s", order_id, status)
-        await self.update_order_status(order_id, status)
+    async def handle_status_update(self, msg: Any) -> None:
+        status = OrderStatus(msg.status)
+        logging.info("Order %s updated to %s", msg.id, status)
+        await self.update_order_status(msg.id, status)
