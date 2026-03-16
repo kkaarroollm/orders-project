@@ -3,7 +3,7 @@ import logging
 
 from shared.redis.connection import connect_redis
 
-from src.config import settings
+from src.settings import settings
 from src.streams import start_streams
 
 

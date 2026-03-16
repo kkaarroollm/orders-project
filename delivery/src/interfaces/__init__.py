@@ -1,2 +1,0 @@
-from src.interfaces.delivery_repo_interface import DeliveryRepositoryProtocol
-from src.interfaces.delivery_service_interface import DeliveryServiceProtocol

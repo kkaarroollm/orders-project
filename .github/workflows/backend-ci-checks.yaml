@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ["delivery", "notifications", "orders"]
-        task: ["ruff check", "mypy ."]
+        service: ["delivery", "notifications", "orders", "simulator"]
+        task: ["ruff check", "ty check"]
     steps:
       - uses: actions/checkout@v4
 

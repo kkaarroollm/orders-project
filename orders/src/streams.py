@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from shared.redis.consumer import StreamConsumer
 
-from src.config import settings
+from src.settings import settings
 
 
 class StatusUpdateMessage(BaseModel):

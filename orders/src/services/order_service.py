@@ -5,18 +5,19 @@ from typing import Any
 from pymongo import AsyncMongoClient
 from shared.redis.publisher import StreamProducer
 
-from src.config import settings
-from src.interfaces import MenuItemRepositoryProtocol, OrderRepositoryProtocol
+from src.repositories.menu_item_repo import MenuItemRepository
+from src.repositories.order_repository import OrderRepository
 from src.responses import OrderResponse
 from src.schemas import OrderSchema, OrderStatus
 from src.services.mixins import TransactionServiceMixin
+from src.settings import settings
 
 
 class OrderService(TransactionServiceMixin):
     def __init__(
         self,
-        order_repo: OrderRepositoryProtocol,
-        menu_repo: MenuItemRepositoryProtocol,
+        order_repo: OrderRepository,
+        menu_repo: MenuItemRepository,
         publisher: StreamProducer[Any],
         mongo_client: AsyncMongoClient,
     ) -> None:

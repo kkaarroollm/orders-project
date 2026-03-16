@@ -1,12 +1,13 @@
 import logging
 from typing import Any
 
-from src.interfaces import NotificationRepositoryProtocol, OrderStatusConnectionManagerProtocol
+from src.repository import NotificationRepository
 from src.schemas import CacheSchema
+from src.websockets import OrderStatusConnectionManager
 
 
 class NotificationService:
-    def __init__(self, repo: NotificationRepositoryProtocol, ws_manager: OrderStatusConnectionManagerProtocol) -> None:
+    def __init__(self, repo: NotificationRepository, ws_manager: OrderStatusConnectionManager) -> None:
         self._repo = repo
         self._ws_manager = ws_manager
 

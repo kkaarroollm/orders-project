@@ -3,9 +3,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import router
+from src.settings import settings
 
 
 @asynccontextmanager

@@ -9,8 +9,8 @@ from redis.asyncio import Redis
 from shared.redis.consumer import StreamConsumer
 from shared.redis.publisher import StreamProducer
 
-from src.config import settings
 from src.schemas import SimulationStream
+from src.settings import settings
 from src.utils import handle_simulation_event
 
 

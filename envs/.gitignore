@@ -1,3 +1,13 @@
-*
+# Ignore runtime env files at root level
+*.env
+mongo-keyfile
+
+# Track templates
 !.gitignore
 !default.*
+
+# Track dev/ and prod/ environment directories
+!dev/
+!dev/**
+!prod/
+!prod/**

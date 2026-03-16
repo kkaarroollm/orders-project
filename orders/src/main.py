@@ -5,9 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.config import settings
 from src.lifespan import startup, teardown
 from src.routes import router
+from src.settings import settings
 
 
 @asynccontextmanager
@@ -31,9 +31,9 @@ app: FastAPI = FastAPI(
 app.include_router(router)
 
 
-app.add_middleware(GZipMiddleware)
+app.add_middleware(GZipMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # ty: ignore[invalid-argument-type]
     allow_origins=settings.cors_allow_origins,
     allow_credentials=settings.cors_allow_credentials,
     allow_methods=settings.cors_allow_methods,

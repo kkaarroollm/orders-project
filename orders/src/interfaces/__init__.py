@@ -1,4 +1,0 @@
-from src.interfaces.menu_repo_interface import MenuItemRepositoryProtocol
-from src.interfaces.menu_service_interface import MenuServiceProtocol
-from src.interfaces.order_repo_interface import OrderRepositoryProtocol
-from src.interfaces.order_service_interface import OrderServiceProtocol

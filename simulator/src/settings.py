@@ -1,6 +1,8 @@
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+__all__ = ["settings"]
+
 
 class Settings(BaseSettings):
     redis_host: str = "localhost"
