@@ -23,14 +23,14 @@ Open [http://localhost](http://localhost) for the frontend, [http://localhost/de
 
 ## Documentation
 
-Full documentation is available at the [docs site](https://kkaarroollm.github.io/orders-project/).
+Full documentation is available at the [docs site](https://docs.orders.karolmarszalek.me/).
 
-- [Getting Started](https://kkaarroollm.github.io/orders-project/getting-started.html)
-- [Architecture](https://kkaarroollm.github.io/orders-project/architecture.html)
-- [Services](https://kkaarroollm.github.io/orders-project/services.html)
-- [Monitoring](https://kkaarroollm.github.io/orders-project/monitoring.html)
-- [Deployment](https://kkaarroollm.github.io/orders-project/deployment.html)
-- [Development](https://kkaarroollm.github.io/orders-project/development.html)
+- [Getting Started](https://docs.orders.karolmarszalek.me/getting-started.html)
+- [Architecture](https://docs.orders.karolmarszalek.me/architecture.html)
+- [Services](https://docs.orders.karolmarszalek.me/services.html)
+- [Monitoring](https://docs.orders.karolmarszalek.me/monitoring.html)
+- [Deployment](https://docs.orders.karolmarszalek.me/deployment.html)
+- [Development](https://docs.orders.karolmarszalek.me/development.html)
 
 ## Author
 
