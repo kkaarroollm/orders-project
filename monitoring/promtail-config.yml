@@ -19,3 +19,7 @@ scrape_configs:
         target_label: "logstream"
       - source_labels: ["__meta_docker_container_log_path"]
         target_label: "__path__"
+      # Only collect logs from application containers
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "(order-service|delivery-service|notifications-service|order-simulator|nginx-proxy|frontend)"
+        action: keep
