@@ -32,3 +32,6 @@ allowedHosts:
 
 livenessProbeUrl: api/v1/health/liveness
 readinessProbeUrl: api/v1/health/readiness
+
+serviceMonitor:
+  enabled: true

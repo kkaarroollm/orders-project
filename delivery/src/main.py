@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.lifespan import startup, teardown
 from src.routes import router
@@ -23,3 +24,5 @@ app = FastAPI(
 )
 
 app.include_router(router)
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")

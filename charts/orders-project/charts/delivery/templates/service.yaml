@@ -5,10 +5,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "orders-project.labels" . | nindent 4 }}
+    app: delivery
 spec:
   selector:
     app: delivery
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.containerPort }}

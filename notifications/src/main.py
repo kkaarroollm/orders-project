@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.lifespan import startup, teardown
 from src.routes import router
@@ -62,6 +63,8 @@ async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
 
 
 app.include_router(router)
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 app.add_middleware(GZipMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(

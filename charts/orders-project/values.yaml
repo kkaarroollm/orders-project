@@ -34,3 +34,25 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "7200"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "7200"
 
+kube-prometheus-stack:
+  enabled: true
+  grafana:
+    adminPassword: admin
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+
+loki:
+  enabled: true
+  deploymentMode: SingleBinary
+  loki:
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+  singleBinary:
+    replicas: 1
+
+promtail:
+  enabled: true
+

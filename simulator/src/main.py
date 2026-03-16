@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from prometheus_client import start_http_server
 from shared.redis.connection import connect_redis
 
 from src.settings import settings
@@ -9,6 +10,10 @@ from src.streams import start_streams
 
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
+
+    start_http_server(settings.metrics_port)
+    logging.info("Prometheus metrics server on :%d", settings.metrics_port)
+
     redis = await connect_redis(settings.redis_url)
     try:
         await start_streams(redis)

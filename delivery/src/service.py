@@ -24,10 +24,20 @@ class DeliveryService:
         delivery_id = await self._repo.create(delivery)
         logging.info("Created delivery %s", delivery_id)
 
-        await self._publisher.publish_raw(settings.deliveries_stream, delivery.model_dump(mode="json"))
+        await self._publisher.publish_raw(
+            settings.deliveries_stream,
+            delivery.model_dump(mode="json"),
+            event_type="delivery.created",
+            correlation_id=msg.id,
+        )
 
-        if getattr(msg, "simulation", 1) != -1:
-            await self._publisher.publish_raw(settings.simulate_delivery_stream, msg.model_dump(mode="json"))
+        if getattr(msg, "simulation", -1) != -1:
+            await self._publisher.publish_raw(
+                settings.simulate_delivery_stream,
+                msg.model_dump(mode="json"),
+                event_type="delivery.simulate",
+                correlation_id=msg.id,
+            )
             logging.info("Simulating delivery for %s", delivery_id)
 
     async def handle_status_update(self, msg: Any) -> None:
@@ -44,4 +54,9 @@ class DeliveryService:
 
         if await self._repo.update_status(delivery.id, new_status):
             delivery.status = new_status
-            await self._publisher.publish_raw(settings.deliveries_stream, delivery.model_dump(mode="json"))
+            await self._publisher.publish_raw(
+                settings.deliveries_stream,
+                delivery.model_dump(mode="json"),
+                event_type="delivery.status_updated",
+                correlation_id=order_id,
+            )

@@ -4,7 +4,7 @@ import redis.asyncio as aioredis
 
 
 async def connect_redis(url: str) -> aioredis.Redis:
-    redis_client: aioredis.Redis = aioredis.from_url(url, decode_responses=True)  # type: ignore[assignment]
+    redis_client: aioredis.Redis = aioredis.from_url(url, decode_responses=True)
 
     try:
         await redis_client.ping()

@@ -12,6 +12,8 @@ dependencies = [
     "redis>=5.2",
     "pydantic>=2.8",
     "pydantic-settings>=2.8",
+    "prometheus-client>=0.21",
+    "prometheus-fastapi-instrumentator>=7.0",
 ]
 
 [dependency-groups]

@@ -26,7 +26,7 @@ async def startup(app: FastAPI) -> None:
         collection=app.state.database.get_collection(settings.mongo_collection_orders),
     )
 
-    publisher: StreamProducer[Any] = StreamProducer(app.state.redis_client)
+    publisher: StreamProducer[Any] = StreamProducer(app.state.redis_client, source="orders-service")
     app.state.menu_service = MenuService(repo=app.state.menu_repository, mongo_client=app.state.mongo_client)
     app.state.order_service = OrderService(
         order_repo=app.state.order_repository,

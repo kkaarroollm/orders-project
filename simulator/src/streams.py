@@ -16,7 +16,7 @@ class SimulationEvent(BaseModel):
 
 
 async def start_streams(redis: Redis) -> None:
-    producer: StreamProducer[Any] = StreamProducer(redis)
+    producer: StreamProducer[Any] = StreamProducer(redis, source="simulator")
 
     async def handle_order(msg: SimulationEvent) -> None:
         await handle_simulation_event(SimulationStream.ORDER, msg.model_dump(), producer)
