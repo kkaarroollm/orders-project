@@ -1,0 +1,56 @@
+name: Build Docker Images
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: orders-service
+            context: .
+            dockerfile: orders/Dockerfile
+            target: production
+          - name: delivery-service
+            context: .
+            dockerfile: delivery/Dockerfile
+            target: production
+          - name: notifications-service
+            context: .
+            dockerfile: notifications/Dockerfile
+            target: production
+          - name: simulator-service
+            context: .
+            dockerfile: simulator/Dockerfile
+          - name: frontend-service
+            context: ./frontend
+            dockerfile: frontend/Dockerfile
+            build-args: VITE_ENV=production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          platforms: linux/amd64,linux/arm64
+          target: ${{ matrix.target || '' }}
+          build-args: ${{ matrix.build-args || '' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
