@@ -1,5 +1,21 @@
 # Architecture
 
+## Design Patterns at a Glance
+
+| Pattern | Where | Why |
+|---------|-------|-----|
+| **Event-Driven Choreography** | Inter-service communication | No central orchestrator -- services react independently to domain events |
+| **Consumer Groups** | Redis Streams consumers | Load-balanced message distribution across pod replicas |
+| **Dead-Letter Queue** | Stream consumer retry logic | Isolates poison messages after 3 failed attempts |
+| **Envelope Pattern** | All stream messages | Correlation ID propagation for distributed tracing without Jaeger/Zipkin |
+| **Repository Pattern** | `shared/db/repository.py` | Generic async CRUD abstraction over MongoDB with type safety |
+| **Transaction Manager** | `shared/db/mongo.py` | Context-managed sessions for atomic multi-document operations |
+| **Strategy Pattern** | Simulator service | Pluggable simulation strategies per entity type (order vs delivery) |
+| **API Gateway** | NGINX reverse proxy | Single entry point with rate limiting, WebSocket upgrade, security headers |
+| **Write-Then-Publish** | Order creation flow | Avoids dual-write problem -- event published only after DB transaction commits |
+
+---
+
 ## Design Patterns & Principles
 
 ### Event-Driven Choreography

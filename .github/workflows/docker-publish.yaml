@@ -1,0 +1,84 @@
+name: Publish Docker Images
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    environment: docker hub
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: orders-service
+            context: .
+            dockerfile: orders/Dockerfile
+            target: production
+          - name: delivery-service
+            context: .
+            dockerfile: delivery/Dockerfile
+            target: production
+          - name: notifications-service
+            context: .
+            dockerfile: notifications/Dockerfile
+            target: production
+          - name: simulator-service
+            context: .
+            dockerfile: simulator/Dockerfile
+          - name: frontend-service
+            context: ./frontend
+            dockerfile: frontend/Dockerfile
+            build-args: VITE_ENV=production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            kkaarroollm/${{ matrix.name }}
+            ghcr.io/kkaarroollm/${{ matrix.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          target: ${{ matrix.target || '' }}
+          build-args: ${{ matrix.build-args || '' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

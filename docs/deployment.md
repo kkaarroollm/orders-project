@@ -1,5 +1,30 @@
 # Deployment
 
+## Docker Images
+
+All application images are built for **linux/amd64** and **linux/arm64** (Raspberry Pi compatible).
+
+### Registries
+
+Images are published to both Docker Hub and GitHub Container Registry on every release:
+
+| Service | Docker Hub | GHCR |
+|---------|-----------|------|
+| Orders | `kkaarroollm/orders-service` | `ghcr.io/kkaarroollm/orders-service` |
+| Delivery | `kkaarroollm/delivery-service` | `ghcr.io/kkaarroollm/delivery-service` |
+| Notifications | `kkaarroollm/notifications-service` | `ghcr.io/kkaarroollm/notifications-service` |
+| Simulator | `kkaarroollm/simulator-service` | `ghcr.io/kkaarroollm/simulator-service` |
+| Frontend | `kkaarroollm/frontend-service` | `ghcr.io/kkaarroollm/frontend-service` |
+
+Tags follow semver: `:0.1.0`, `:0.2.0`, etc. The `:latest` tag always points to the most recent release.
+
+### CI/CD Pipeline
+
+- **On PR / push to master**: all 5 images are built for both architectures (no push) to catch build failures early
+- **On GitHub release**: images are built, tagged with the release version, and pushed to both registries
+
+---
+
 ## Docker Compose
 
 The `docker-compose.yaml` defines the full development stack: application services, databases, monitoring, and reverse proxy.
@@ -112,3 +137,25 @@ On first install, three Jobs run automatically:
 ServiceMonitors are defined for orders, delivery, and notifications services. Grafana dashboards are provisioned via ConfigMaps with the `grafana_dashboard: "1"` label (auto-discovered by the sidecar).
 
 Loki is configured as an additional Grafana datasource in `values.yaml`.
+
+---
+
+## Raspberry Pi Deployment
+
+All images are built for `linux/arm64`, so the full stack runs on a Raspberry Pi 4 or 5.
+
+### Resource Estimates
+
+| Stack | RAM | Disk |
+|-------|-----|------|
+| App only (5 services + MongoDB + Redis + NGINX) | ~1 GB | ~2 GB |
+| App + monitoring (Prometheus, Grafana, Loki, Promtail) | ~2-3 GB | ~5-10 GB |
+
+The retention limits (Prometheus 3 days / 256 MB, Loki 72 hours) keep disk usage bounded over time.
+
+### Tips
+
+- A Raspberry Pi 4 with **4 GB RAM** can run the full stack including monitoring
+- Use `DEPLOY_ENV=prod` for production-grade passwords
+- Consider reducing `replicaCount` to 1 in Helm values for single-node clusters
+- Cloudflare Tunnel works well for exposing the cluster without port forwarding
