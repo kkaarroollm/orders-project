@@ -47,7 +47,7 @@ sequenceDiagram
     participant N as Notifications
 
     B->>O: POST /api/v1/orders
-    Note over O: one transaction:<br/>decrement stock + create order
+    Note over O: one transaction:<br/>decrement stock + create order<br/>+ stage events in outbox
     O-)N: order.created.v1
     N--)B: SSE confirmed
     O-)S: order.simulate.v1
@@ -70,7 +70,7 @@ Events are versioned classes in `shared/events`; the class owns its stream and w
 | Concern | Mechanism |
 |---|---|
 | Overselling | Stock decrement and order insert share one MongoDB transaction |
-| Lost events | Publish failures raise; nothing reports success on a dropped event |
+| Lost events | Outbox: events staged in the writing transaction, relayed after commit |
 | Duplicate deliveries | Inbox: event id recorded in the same transaction as the write |
 | Poison messages | 3 retries, then the `dead-letters` stream |
 | Dead consumers | Readiness fails and the process exits, so Kubernetes restarts it |

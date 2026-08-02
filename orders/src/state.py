@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 from redis.asyncio import Redis
+from shared.db.outbox import OutboxRelay
 from shared.redis.event_bus import EventBus
 
 from src.repositories.menu_item_repo import MenuItemRepository
@@ -20,5 +21,6 @@ class AppState:
     order_repository: OrderRepository
     menu_service: MenuService
     order_service: OrderService
+    outbox_relay: OutboxRelay | None = field(default=None)
     event_bus: EventBus | None = field(default=None)
     ready: bool = field(default=False)
