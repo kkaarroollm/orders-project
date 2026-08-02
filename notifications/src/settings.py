@@ -11,6 +11,8 @@ class Settings(BaseServiceSettings):
 
     # Stream names live on the event classes in `shared.events`.
     notifications_group: str = "notifications-group"
+    # One group per replica, so every replica sees every push.
+    fanout_group_prefix: str = "ws-fanout"
 
 
 settings = Settings()
