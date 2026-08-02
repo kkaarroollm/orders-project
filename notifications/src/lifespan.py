@@ -1,11 +1,13 @@
 import logging
+from typing import Any
 
 from fastapi import FastAPI
 from shared.logging import setup_logging
 from shared.redis.connection import connect_redis
+from shared.redis.publisher import StreamProducer
 
 from src.repository import NotificationRepository
-from src.service import NotificationService
+from src.service import NotificationService, StatusPushFanout
 from src.settings import settings
 from src.sse import order_stream_registry
 from src.state import AppState
@@ -17,11 +19,16 @@ async def startup(app: FastAPI) -> None:
     redis_client = await connect_redis(settings.redis_url)
 
     notification_repo = NotificationRepository(redis_client)
+    # Pushes are ephemeral, so the fanout stream stays small.
+    producer: StreamProducer[Any] = StreamProducer(
+        redis_client, source="notifications-service", maxlen=10_000
+    )
 
     state = AppState(
         redis_client=redis_client,
         notification_repository=notification_repo,
-        notification_service=NotificationService(notification_repo, order_stream_registry),
+        notification_service=NotificationService(notification_repo, producer),
+        status_push_fanout=StatusPushFanout(order_stream_registry),
     )
 
     await setup_streams(state)
