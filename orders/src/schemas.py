@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 
@@ -37,8 +37,9 @@ class OrderSchema(BaseDocument):
     items: list[OrderedItemSchema]
     total_price: Decimal | None = Field(default=None)
     status: OrderStatus = OrderStatus.CONFIRMED
-    simulation: int = 1
-    created_at: datetime = Field(default_factory=datetime.now)
+    # Client-supplied, so it is bounded: -1 disables simulation, 1 enables it.
+    simulation: int = Field(default=1, ge=-1, le=1)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @field_serializer("total_price", when_used="json")
     def serialize_total_price(self, value: Decimal | None) -> float | None:

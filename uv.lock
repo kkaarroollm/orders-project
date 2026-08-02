@@ -81,37 +81,11 @@ name = "delivery"
 version = "0.1.0"
 source = { virtual = "delivery" }
 dependencies = [
-    { name = "fastapi", extra = ["standard"] },
-    { name = "pydantic-settings" },
-    { name = "pymongo" },
-    { name = "redis" },
-    { name = "shared" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-    { name = "ty" },
+    { name = "shared", extra = ["mongo", "web"] },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = "==0.115.11" },
-    { name = "pydantic-settings", specifier = ">=2.8.1" },
-    { name = "pymongo", specifier = ">=4.10" },
-    { name = "redis", specifier = "==5.2.1" },
-    { name = "shared", editable = "shared" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "ruff", specifier = "==0.11.0" },
-    { name = "ty", specifier = ">=0.0.1a7" },
-]
+requires-dist = [{ name = "shared", extras = ["mongo", "web"], editable = "shared" }]
 
 [[package]]
 name = "dnspython"
@@ -444,72 +418,22 @@ name = "notifications"
 version = "0.1.0"
 source = { virtual = "notifications" }
 dependencies = [
-    { name = "fastapi", extra = ["standard"] },
-    { name = "pydantic-settings" },
-    { name = "redis" },
-    { name = "shared" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-    { name = "ty" },
+    { name = "shared", extra = ["web"] },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = "==0.115.11" },
-    { name = "pydantic-settings", specifier = ">=2.8.1" },
-    { name = "redis", specifier = "==5.2.1" },
-    { name = "shared", editable = "shared" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "ruff", specifier = "==0.11.0" },
-    { name = "ty", specifier = ">=0.0.1a7" },
-]
+requires-dist = [{ name = "shared", extras = ["web"], editable = "shared" }]
 
 [[package]]
 name = "orders"
 version = "0.1.0"
 source = { virtual = "orders" }
 dependencies = [
-    { name = "fastapi", extra = ["standard"] },
-    { name = "pydantic-settings" },
-    { name = "pymongo" },
-    { name = "redis" },
-    { name = "shared" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-    { name = "ty" },
+    { name = "shared", extra = ["mongo", "web"] },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = "==0.115.11" },
-    { name = "pydantic-settings", specifier = ">=2.8.1" },
-    { name = "pymongo", specifier = ">=4.10" },
-    { name = "redis", specifier = "==5.2.1" },
-    { name = "shared", editable = "shared" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "ruff", specifier = "==0.11.0" },
-    { name = "ty", specifier = ">=0.0.1a7" },
-]
+requires-dist = [{ name = "shared", extras = ["mongo", "web"], editable = "shared" }]
 
 [[package]]
 name = "orders-project-workspace"
@@ -518,6 +442,8 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "ruff" },
     { name = "ty" },
 ]
@@ -526,6 +452,8 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = "==0.11.0" },
     { name = "ty", specifier = ">=0.0.1a7" },
 ]
@@ -882,32 +810,29 @@ dependencies = [
     { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
-    { name = "pymongo" },
     { name = "redis" },
-    { name = "starlette" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "ruff" },
-    { name = "ty" },
+[package.optional-dependencies]
+mongo = [
+    { name = "pymongo" },
+]
+web = [
+    { name = "fastapi", extra = ["standard"] },
+    { name = "starlette" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "fastapi", extras = ["standard"], marker = "extra == 'web'", specifier = "==0.115.11" },
     { name = "prometheus-client", specifier = ">=0.21" },
     { name = "pydantic", specifier = ">=2.8" },
     { name = "pydantic-settings", specifier = ">=2.8" },
-    { name = "pymongo", specifier = ">=4.10" },
-    { name = "redis", specifier = ">=5.2" },
-    { name = "starlette", specifier = ">=0.36" },
+    { name = "pymongo", marker = "extra == 'mongo'", specifier = ">=4.10" },
+    { name = "redis", specifier = "==5.2.1" },
+    { name = "starlette", marker = "extra == 'web'", specifier = ">=0.36" },
 ]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ruff", specifier = "==0.11.0" },
-    { name = "ty", specifier = ">=0.0.1a7" },
-]
+provides-extras = ["mongo", "web"]
 
 [[package]]
 name = "shellingham"
@@ -923,31 +848,11 @@ name = "simulator"
 version = "0.1.0"
 source = { virtual = "simulator" }
 dependencies = [
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "redis" },
     { name = "shared" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "ruff" },
-    { name = "ty" },
-]
-
 [package.metadata]
-requires-dist = [
-    { name = "pydantic", specifier = "==2.10.6" },
-    { name = "pydantic-settings", specifier = ">=2.8.1" },
-    { name = "redis", specifier = "==5.2.1" },
-    { name = "shared", editable = "shared" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ruff", specifier = "==0.11.0" },
-    { name = "ty", specifier = ">=0.0.1a7" },
-]
+requires-dist = [{ name = "shared", editable = "shared" }]
 
 [[package]]
 name = "starlette"

@@ -15,6 +15,9 @@ spec:
       labels:
         app: notifications
     spec:
+      # Long enough for teardown to end every open SSE stream before the
+      # container is killed.
+      terminationGracePeriodSeconds: 20
       containers:
         - name: notifications
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}

@@ -11,10 +11,7 @@ class Settings(BaseServiceSettings):
 
     mongo_collection_deliveries: str = "deliveries"
 
-    orders_stream: str = "orders-stream"
-    deliveries_stream: str = "deliveries-stream"
-    simulate_delivery_stream: str = "simulate-delivery-stream"
-    delivery_status_stream: str = "delivery-status-stream"
+    # Stream names live on the event classes in `shared.events`.
     delivery_group: str = "delivery-group"
 
 

@@ -1,25 +1,27 @@
 import logging
-from typing import Any
+
+from shared.events.base import DeliveryEvent, OrderEvent
 
 from src.repository import NotificationRepository
 from src.schemas import CacheSchema
-from src.websockets import OrderStatusConnectionManager
+from src.sse import OrderStreamRegistry
 
 
 class NotificationService:
-    def __init__(self, repo: NotificationRepository, ws_manager: OrderStatusConnectionManager) -> None:
+    def __init__(self, repo: NotificationRepository, registry: OrderStreamRegistry) -> None:
         self._repo = repo
-        self._ws_manager = ws_manager
+        self._registry = registry
 
-    async def handle_event(self, msg: Any) -> None:
-        order_id = getattr(msg, "order_id", None) or getattr(msg, "id", None)
-        status = getattr(msg, "status", None)
-        if not (order_id and status):
-            raise ValueError(f"NotificationService.handle_event: Invalid data received: {msg}")
+    async def handle_order_event(self, event: OrderEvent) -> None:
+        await self._push(event.order_id, event.status)
 
+    async def handle_delivery_event(self, event: DeliveryEvent) -> None:
+        await self._push(event.order_id, event.status)
+
+    async def _push(self, order_id: str, status: str) -> None:
         cache = CacheSchema(order_id=order_id, status=status).model_dump(mode="json")
 
         logging.info("Update for order %s: %s", order_id, status)
 
-        await self._ws_manager.broadcast(order_id, cache)
+        await self._registry.broadcast(order_id, cache)
         await self._repo.set_order_status(order_id, cache)

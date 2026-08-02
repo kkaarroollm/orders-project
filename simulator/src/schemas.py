@@ -1,15 +1,11 @@
-from enum import Enum
-
-from src.settings import settings
+from enum import Enum, auto
 
 
 class SimulationStream(Enum):
-    ORDER = (settings.simulate_order_stream, settings.order_status_stream)
-    DELIVERY = (settings.simulate_delivery_stream, settings.delivery_status_stream)
+    """Which simulation to run; the events themselves carry the stream names."""
 
-    def __init__(self, source: str, target: str) -> None:
-        self.source = source
-        self.target = target
+    ORDER = auto()
+    DELIVERY = auto()
 
 
 class OrderStatus(str, Enum):

@@ -20,6 +20,7 @@ async def startup(app: FastAPI) -> None:
     delivery_repo = DeliveryRepository(
         collection=database.get_collection(settings.mongo_collection_deliveries),
     )
+    await delivery_repo.ensure_indexes()
 
     publisher: StreamProducer[Any] = StreamProducer(redis_client, source="delivery-service")
 

@@ -1,8 +1,9 @@
 from decimal import Decimal
-from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pydantic import ValidationError
+from shared.events.order import OrderStatusSimulated
 
 from src.schemas import MenuItemSchema, OrderSchema, OrderStatus, OrderedItemSchema, OrderingPersonSchema
 from src.services.order_service import OrderService
@@ -77,7 +78,10 @@ async def test_create_order_success(service, menu_repo, order_repo, publisher):
     assert result.success is True
     assert order.total_price == Decimal("19.98")
     assert order.id == "order123"
-    publisher.publish_raw.assert_called()
+
+    published = [call.args[0] for call in publisher.publish.call_args_list]
+    assert [type(event).__name__ for event in published] == ["OrderCreated", "OrderSimulationRequested"]
+    assert published[0].event_type == "order.created.v1"
 
 
 @pytest.mark.asyncio
@@ -107,13 +111,65 @@ async def test_create_order_insufficient_stock(service, menu_repo):
 
 
 @pytest.mark.asyncio
+async def test_rejected_order_aborts_transaction(service, menu_repo, order_repo, mongo_client):
+    """A later item failing must roll back the stock already decremented for earlier items."""
+    in_stock = MenuItemSchema(name="Burger", price=9.99, category="food", stock=5, id="507f1f77bcf86cd799439011")
+    sold_out = MenuItemSchema(name="Fries", price=3.50, category="food", stock=0, id="507f1f77bcf86cd799439012")
+    menu_repo.get_by_id.side_effect = [in_stock, sold_out]
+    menu_repo.decrement_stock.side_effect = [True, False]
+
+    order = _make_order(
+        items=[
+            OrderedItemSchema(item_id="507f1f77bcf86cd799439011", quantity=1),
+            OrderedItemSchema(item_id="507f1f77bcf86cd799439012", quantity=1),
+        ]
+    )
+    result = await service.create_order_with_stock_check(order)
+
+    session = mongo_client.start_session.return_value
+    assert result.success is False
+    session.abort_transaction.assert_awaited_once()
+    session.commit_transaction.assert_not_awaited()
+    order_repo.create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_missing_item_aborts_transaction(service, menu_repo, mongo_client):
+    menu_repo.get_by_id.return_value = None
+
+    await service.create_order_with_stock_check(_make_order())
+
+    session = mongo_client.start_session.return_value
+    session.abort_transaction.assert_awaited_once()
+    session.commit_transaction.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_created_at_is_timezone_aware():
+    assert _make_order().created_at.tzinfo is not None
+
+
+@pytest.mark.parametrize("simulation", [-2, 2, 10_000])
+def test_out_of_range_simulation_rejected(simulation):
+    """`simulation` is client-supplied and drives server-side scheduling."""
+    with pytest.raises(ValidationError):
+        OrderSchema(
+            person=OrderingPersonSchema(
+                first_name="John", last_name="Doe", address="123 Main St", phone_number="555-1234"
+            ),
+            items=[OrderedItemSchema(item_id="507f1f77bcf86cd799439011", quantity=1)],
+            simulation=simulation,
+        )
+
+
+@pytest.mark.asyncio
 async def test_handle_status_update(service, order_repo, publisher):
     order_repo.update_status.return_value = True
-    msg = SimpleNamespace(id="order123", status="preparing")
 
-    await service.handle_status_update(msg)
+    await service.handle_status_update(OrderStatusSimulated(id="order123", status="preparing"))
 
-    publisher.publish_raw.assert_called_once()
-    call_kwargs = publisher.publish_raw.call_args
-    assert call_kwargs.kwargs["event_type"] == "order.status_updated"
-    assert call_kwargs.kwargs["correlation_id"] == "order123"
+    publisher.publish.assert_called_once()
+    event = publisher.publish.call_args.args[0]
+    assert event.event_type == "order.status_updated.v1"
+    assert event.status == "preparing"
+    assert publisher.publish.call_args.kwargs["correlation_id"] == "order123"

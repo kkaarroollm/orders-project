@@ -9,8 +9,7 @@ class Settings(BaseServiceSettings):
     contact_name: str = "kkaarroollm"  # noqa: N815
     contact_email: str = "mkarol.4514@gmail.com"
 
-    orders_stream: str = "orders-stream"
-    deliveries_stream: str = "deliveries-stream"
+    # Stream names live on the event classes in `shared.events`.
     notifications_group: str = "notifications-group"
 
 

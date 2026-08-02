@@ -1,20 +1,18 @@
-from pydantic import BaseModel
+from shared.events.delivery import DeliveryCreated, DeliveryStatusChanged
+from shared.events.order import OrderCreated, OrderStatusChanged
 from shared.redis.event_bus import EventBus
 
 from src.settings import settings
 from src.state import AppState
 
 
-class EventMessage(BaseModel):
-    id: str | None = None
-    order_id: str | None = None
-    status: str | None = None
-
-
 async def setup_streams(state: AppState) -> None:
+    service = state.notification_service
     bus = EventBus(state.redis_client, group=settings.notifications_group)
-    bus.subscribe(settings.orders_stream, EventMessage, state.notification_service.handle_event)
-    bus.subscribe(settings.deliveries_stream, EventMessage, state.notification_service.handle_event)
+    bus.subscribe(OrderCreated, service.handle_order_event)
+    bus.subscribe(OrderStatusChanged, service.handle_order_event)
+    bus.subscribe(DeliveryCreated, service.handle_delivery_event)
+    bus.subscribe(DeliveryStatusChanged, service.handle_delivery_event)
     await bus.start()
     state.event_bus = bus
 

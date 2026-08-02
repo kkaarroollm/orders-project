@@ -9,11 +9,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_url: str = ""
 
-    simulate_order_stream: str = "simulate-order-stream"
-    simulate_delivery_stream: str = "simulate-delivery-stream"
-    order_status_stream: str = "order-status-stream"
-    delivery_status_stream: str = "delivery-status-stream"
-
+    # Stream names live on the event classes in `shared.events`.
     simulator_group: str = "simulator-group"
     metrics_port: int = 9090
 

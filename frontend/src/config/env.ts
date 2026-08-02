@@ -30,4 +30,7 @@ const normalizeOrdersApiUrl = (rawUrl: string | undefined): string => {
 export const API_ORDERS_URL = normalizeOrdersApiUrl(
   import.meta.env.VITE_API_ORDERS,
 );
-export const NOTIFICATION_WS_URL = import.meta.env.VITE_API_NOTIFICATIONS_WS;
+// Empty default means same-origin, which nginx proxies to the notifications
+// service. EventSource accepts relative URLs, so no absolute base is required.
+export const NOTIFICATION_SSE_URL =
+  import.meta.env.VITE_API_NOTIFICATIONS_SSE ?? '';

@@ -1,14 +1,10 @@
-name: Python Linters
+name: Backend CI
 
 on: [push, pull_request]
 
 jobs:
-  python-linters:
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: ["delivery", "notifications", "orders", "simulator"]
-        task: ["ruff check", "ty check"]
     steps:
       - uses: actions/checkout@v4
 
@@ -16,14 +12,34 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: "${{ matrix.service }}/uv.lock"
+          cache-dependency-glob: "uv.lock"
 
-      - name: Install dependencies for ${{ matrix.service }}
-        run: |
-          cd ${{ matrix.service }}
-          uv sync --all-extras --dev
+      - name: Install workspace
+        run: uv sync --all-packages --dev
 
-      - name: Run ${{ matrix.task }} in ${{ matrix.service }}
-        run: |
-          cd ${{ matrix.service }}
-          uv run ${{ matrix.task }}
+      - name: ruff check
+        run: uv run ruff check
+
+      - name: ty check
+        run: uv run ty check
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ["shared", "delivery", "notifications", "orders"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python environment
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install workspace
+        run: uv sync --all-packages --dev
+
+      - name: pytest ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: uv run pytest

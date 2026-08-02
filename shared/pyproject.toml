@@ -8,22 +8,18 @@ version = "0.1.0"
 description = "Shared library for orders-project microservices"
 requires-python = ">=3.13"
 dependencies = [
-    "pymongo>=4.10",
-    "redis>=5.2",
     "pydantic>=2.8",
     "pydantic-settings>=2.8",
+    "redis==5.2.1",
     "prometheus-client>=0.21",
+]
+
+[project.optional-dependencies]
+mongo = ["pymongo>=4.10"]
+web = [
+    "fastapi[standard]==0.115.11",
     "starlette>=0.36",
 ]
-
-[dependency-groups]
-dev = [
-    "ty>=0.0.1a7",
-    "ruff==0.11.0",
-]
-
-[tool.ty.environment]
-python-version = "3.13"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/shared"]

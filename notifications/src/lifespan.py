@@ -7,9 +7,9 @@ from shared.redis.connection import connect_redis
 from src.repository import NotificationRepository
 from src.service import NotificationService
 from src.settings import settings
+from src.sse import order_stream_registry
 from src.state import AppState
 from src.streams import setup_streams, stop_streams
-from src.websockets import ws_order_status_manager
 
 
 async def startup(app: FastAPI) -> None:
@@ -21,7 +21,7 @@ async def startup(app: FastAPI) -> None:
     state = AppState(
         redis_client=redis_client,
         notification_repository=notification_repo,
-        notification_service=NotificationService(notification_repo, ws_order_status_manager),
+        notification_service=NotificationService(notification_repo, order_stream_registry),
     )
 
     await setup_streams(state)
@@ -35,6 +35,7 @@ async def teardown(app: FastAPI) -> None:
     if not state:
         return
     state.ready = False
+    await order_stream_registry.close_all()
     await stop_streams(state)
     if state.redis_client:
         await state.redis_client.close()
