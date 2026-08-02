@@ -12,7 +12,8 @@
 | **Transaction Manager** | `shared/db/mongo.py` | Context-managed sessions for atomic multi-document operations |
 | **Strategy Pattern** | Simulator service | Pluggable simulation strategies per entity type (order vs delivery) |
 | **API Gateway** | NGINX reverse proxy | Single entry point with rate limiting, SSE stream passthrough, security headers |
-| **Write-Then-Publish** | Order creation flow | Avoids dual-write problem -- event published only after DB transaction commits |
+| **Transactional Outbox** | Order creation flow | Events are staged in the same transaction as the write, then relayed |
+| **Inbox / Dedup** | Delivery consumer | Event id recorded in the business transaction, so redelivery is a no-op |
 
 ---
 
@@ -32,24 +33,38 @@ This means:
 
 A SAGA pattern implies a coordinator (orchestrator) or explicit compensation logic to undo steps on failure. This system doesn't have either -- if an event fails processing, it's retried and eventually moved to a dead-letter queue. The tradeoff: simpler implementation, but no automatic rollback across services.
 
-### Transactional Outbox (Simplified)
+### Transactional Outbox
 
-The order service uses a **write-then-publish** approach:
-
-1. A MongoDB transaction atomically validates stock and creates the order
-2. Only after the transaction commits, the event is published to Redis Streams
-
-This avoids the dual-write problem where a crash between database write and event publish could leave the system in an inconsistent state. The tradeoff vs. a full outbox pattern: if the process crashes after commit but before publish, the event is lost. For a demo system, this is acceptable.
+The order service never publishes directly. Events are staged in an `outbox`
+collection inside the same transaction that writes the order, so the event is
+part of the commit rather than a second write that can fail on its own:
 
 ```python
-# Simplified flow in order_service.py
 async with transaction() as session:
     await menu_repo.decrement_stock(item_id, quantity, session)
     order_id = await order_repo.create(order_data, session)
-
-# Published only after successful commit
-await publisher.publish(orders_stream, order_event)
+    await outbox.add(OrderCreated(...), session)   # same transaction
 ```
+
+A relay then moves staged rows onto Redis Streams. It watches a MongoDB change
+stream for low latency and sweeps for unpublished rows every 30 seconds. The
+sweep is what makes it correct -- it covers a relay that was down, a publish
+that failed, and a resume token that aged out of the oplog -- so the change
+stream is only a latency optimisation.
+
+Publishing is therefore **at-least-once**: the relay can publish and then crash
+before marking the row. Republished events carry their original `event_id`,
+which is what the consumer inbox deduplicates on.
+
+### Inbox Deduplication
+
+The delivery service records each `event_id` it applies in the same transaction
+as the delivery it creates. A redelivered event hits a unique index, aborts the
+transaction, and leaves no second delivery. At-least-once delivery plus the
+inbox gives effectively-once processing.
+
+Order status updates and notification broadcasts are idempotent by
+construction, so they carry no inbox.
 
 ---
 

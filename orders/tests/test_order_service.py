@@ -22,9 +22,8 @@ def menu_repo():
 
 
 @pytest.fixture
-def publisher():
-    pub = AsyncMock()
-    return pub
+def outbox():
+    return AsyncMock()
 
 
 @pytest.fixture
@@ -40,11 +39,11 @@ def mongo_client():
 
 
 @pytest.fixture
-def service(order_repo, menu_repo, publisher, mongo_client):
+def service(order_repo, menu_repo, outbox, mongo_client):
     return OrderService(
         order_repo=order_repo,
         menu_repo=menu_repo,
-        publisher=publisher,
+        outbox=outbox,
         mongo_client=mongo_client,
     )
 
@@ -64,7 +63,7 @@ def _make_order(**overrides):
 
 
 @pytest.mark.asyncio
-async def test_create_order_success(service, menu_repo, order_repo, publisher):
+async def test_create_order_success(service, menu_repo, order_repo, outbox):
     menu_item = MenuItemSchema(
         name="Burger", price=9.99, category="food", stock=10, id="507f1f77bcf86cd799439011"
     )
@@ -79,9 +78,12 @@ async def test_create_order_success(service, menu_repo, order_repo, publisher):
     assert order.total_price == Decimal("19.98")
     assert order.id == "order123"
 
-    published = [call.args[0] for call in publisher.publish.call_args_list]
-    assert [type(event).__name__ for event in published] == ["OrderCreated", "OrderSimulationRequested"]
-    assert published[0].event_type == "order.created.v1"
+    staged = [call.args[0] for call in outbox.add.call_args_list]
+    assert [type(event).__name__ for event in staged] == ["OrderCreated", "OrderSimulationRequested"]
+    assert staged[0].event_type == "order.created.v1"
+    # Staged inside the transaction, not published after it.
+    session = service._mongo_client.start_session.return_value
+    assert all(call.args[1] is session for call in outbox.add.call_args_list)
 
 
 @pytest.mark.asyncio
@@ -163,13 +165,13 @@ def test_out_of_range_simulation_rejected(simulation):
 
 
 @pytest.mark.asyncio
-async def test_handle_status_update(service, order_repo, publisher):
+async def test_handle_status_update(service, order_repo, outbox):
     order_repo.update_status.return_value = True
 
     await service.handle_status_update(OrderStatusSimulated(id="order123", status="preparing"))
 
-    publisher.publish.assert_called_once()
-    event = publisher.publish.call_args.args[0]
+    outbox.add.assert_called_once()
+    event = outbox.add.call_args.args[0]
     assert event.event_type == "order.status_updated.v1"
     assert event.status == "preparing"
-    assert publisher.publish.call_args.kwargs["correlation_id"] == "order123"
+    assert outbox.add.call_args.kwargs["correlation_id"] == "order123"
