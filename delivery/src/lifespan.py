@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI
+from shared.db.inbox import MongoInbox
 from shared.logging import setup_logging
 from shared.redis.publisher import StreamProducer
 
@@ -22,6 +23,9 @@ async def startup(app: FastAPI) -> None:
     )
     await delivery_repo.ensure_indexes()
 
+    inbox = MongoInbox(collection=database.get_collection(settings.mongo_collection_inbox))
+    await inbox.ensure_indexes()
+
     publisher: StreamProducer[Any] = StreamProducer(redis_client, source="delivery-service")
 
     state = AppState(
@@ -29,7 +33,12 @@ async def startup(app: FastAPI) -> None:
         database=database,
         redis_client=redis_client,
         delivery_repo=delivery_repo,
-        delivery_service=DeliveryService(repo=delivery_repo, publisher=publisher),
+        delivery_service=DeliveryService(
+            repo=delivery_repo,
+            publisher=publisher,
+            inbox=inbox,
+            mongo_client=mongo_client,
+        ),
     )
 
     await setup_streams(state)

@@ -1,6 +1,7 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pymongo.errors import DuplicateKeyError
 from shared.events.delivery import DeliveryStatusSimulated
 from shared.events.order import OrderCreated, OrderStatusChanged
 
@@ -19,8 +20,26 @@ def publisher():
 
 
 @pytest.fixture
-def service(delivery_repo, publisher):
-    return DeliveryService(repo=delivery_repo, publisher=publisher)
+def inbox():
+    return AsyncMock()
+
+
+@pytest.fixture
+def mongo_client():
+    client = MagicMock()
+    session = AsyncMock()
+    client.start_session.return_value = session
+    return client
+
+
+@pytest.fixture
+def service(delivery_repo, publisher, inbox, mongo_client):
+    return DeliveryService(
+        repo=delivery_repo,
+        publisher=publisher,
+        inbox=inbox,
+        mongo_client=mongo_client,
+    )
 
 
 @pytest.mark.asyncio
@@ -53,6 +72,18 @@ async def test_handle_order_no_simulation(service, delivery_repo, publisher):
 
     delivery_repo.create.assert_called_once()
     assert publisher.publish.call_count == 1  # DeliveryCreated only
+
+
+@pytest.mark.asyncio
+async def test_redelivered_event_creates_no_second_delivery(service, delivery_repo, publisher, inbox, mongo_client):
+    """Redelivery hits the inbox unique index, so the transaction aborts."""
+    inbox.record.side_effect = DuplicateKeyError("duplicate")
+    event = OrderStatusChanged(id="order123", status="out_for_delivery")
+
+    await service.handle_order(event)
+
+    mongo_client.start_session.return_value.abort_transaction.assert_awaited_once()
+    publisher.publish.assert_not_called()
 
 
 @pytest.mark.asyncio

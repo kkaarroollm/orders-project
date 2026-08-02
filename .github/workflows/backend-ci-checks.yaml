@@ -43,3 +43,38 @@ jobs:
       - name: pytest ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
         run: uv run pytest
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python environment
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install workspace
+        run: uv sync --all-packages --dev
+
+      # Transactions need a replica set, so this cannot be a plain service
+      # container.
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
+          for _ in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1})' && break
+            sleep 2
+          done
+          docker exec mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for _ in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval 'db.hello().isWritablePrimary' | grep -q true && break
+            sleep 2
+          done
+
+      - name: pytest delivery (integration)
+        working-directory: delivery
+        env:
+          INTEGRATION_MONGO_URL: mongodb://localhost:27017/?replicaSet=rs0&directConnection=true
+        run: uv run pytest -m "" tests/test_inbox_integration.py
