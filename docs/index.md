@@ -1,26 +1,30 @@
 # Orders Project
 
-A microservices-based food delivery system exploring **event-driven architecture**, **distributed systems patterns**, and **container orchestration**. Built with FastAPI, MongoDB, Redis Streams, and React.
+Event-driven food delivery system: **FastAPI + MongoDB + Redis Streams**, a
+React frontend, running on a self-hosted Raspberry Pi Kubernetes cluster.
 
-Deployed on a self-hosted Kubernetes cluster (Raspberry Pi) at [orders.karolmarszalek.me](https://orders.karolmarszalek.me/).
+Live at [orders.karolmarszalek.me](https://orders.karolmarszalek.me/) ·
+source on [GitHub](https://github.com/kkaarroollm/orders-project).
 
-## What Makes This Interesting
+There is no orchestrator and no service-to-service call. Each service reacts to
+events on Redis Streams and emits its own.
 
-- **Event-driven choreography** -- services communicate exclusively through Redis Streams, with no synchronous inter-service calls
-- **Guaranteed message delivery** -- consumer groups, automatic retries, and a dead-letter queue ensure no event is silently lost
-- **ACID transactions + eventual consistency** -- MongoDB transactions guard local state, while async events propagate changes across services
-- **Real-time push** -- server-sent events deliver order status updates to the browser the moment they happen
-- **Full observability** -- Prometheus metrics, Grafana dashboards, and Loki log aggregation with structured correlation IDs
-- **Dual deployment** -- runs identically on Docker Compose (local) and Kubernetes with Helm (production)
+```bash
+git clone https://github.com/kkaarroollm/orders-project
+cd orders-project
+./scripts/setup.sh          # generates envs/mongo-keyfile
+docker compose up --build
+```
+
+[localhost](http://localhost) serves the app, [localhost/dev](http://localhost/dev)
+serves Grafana, Prometheus and the API docs.
+
+The [README](https://github.com/kkaarroollm/orders-project#readme) covers the
+workspace layout and day-to-day development. This site covers the design.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Contents
 
-getting-started
-architecture
-services
-monitoring
-deployment
-development
+design
 ```

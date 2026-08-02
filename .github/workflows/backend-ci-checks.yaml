@@ -46,6 +46,11 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
 
@@ -77,4 +82,16 @@ jobs:
         working-directory: delivery
         env:
           INTEGRATION_MONGO_URL: mongodb://localhost:27017/?replicaSet=rs0&directConnection=true
-        run: uv run pytest -m "" tests/test_inbox_integration.py
+        run: uv run pytest tests/test_inbox_integration.py
+
+      - name: pytest orders (integration)
+        working-directory: orders
+        env:
+          INTEGRATION_MONGO_URL: mongodb://localhost:27017/?replicaSet=rs0&directConnection=true
+        run: uv run pytest tests/test_outbox_integration.py
+
+      - name: pytest shared (integration)
+        working-directory: shared
+        env:
+          INTEGRATION_REDIS_URL: redis://localhost:6379
+        run: uv run pytest tests/test_scheduler_integration.py

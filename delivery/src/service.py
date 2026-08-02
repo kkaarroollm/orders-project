@@ -82,8 +82,8 @@ class DeliveryService:
 
         new_status = DeliveryStatus(event.status)
 
-        # Idempotent by construction: applying the same status twice is a no-op.
-        if await self._repo.update_status(delivery.id, new_status):
+        # A replayed or out-of-order status matches nothing and is dropped.
+        if await self._repo.advance_status(delivery.id, new_status):
             await self._publisher.publish(
                 DeliveryStatusChanged(order_id=order_id, status=new_status.value),
                 correlation_id=order_id,

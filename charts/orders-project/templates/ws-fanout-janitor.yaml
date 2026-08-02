@@ -1,0 +1,80 @@
+{{- /*
+Each notifications replica owns a consumer group on the fanout stream and
+destroys it on shutdown. A pod killed with SIGKILL never gets to, so this
+removes groups whose consumers have all gone idle.
+*/ -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-ws-fanout-janitor
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: janitor
+              image: redis:7-alpine
+              env:
+                # redis-cli authenticates with this automatically.
+                - name: REDISCLI_AUTH
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.fullnameOverride }}-redis-auth
+                      key: REDIS_PASSWORD
+              command:
+                - redis-cli
+                - -h
+                - {{ .Values.global.fullnameOverride }}-redis-svc
+                - --eval
+                - /scripts/reap.lua
+                - ws-events
+                - ","
+                - "3600000"
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+          volumes:
+            - name: scripts
+              configMap:
+                name: {{ .Values.global.fullnameOverride }}-ws-fanout-janitor
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-ws-fanout-janitor
+  namespace: {{ .Release.Namespace }}
+data:
+  reap.lua: |
+    local stream = KEYS[1]
+    local max_idle_ms = tonumber(ARGV[1])
+    local destroyed = 0
+
+    if redis.call('EXISTS', stream) == 0 then
+      return 0
+    end
+
+    for _, group in ipairs(redis.call('XINFO', 'GROUPS', stream)) do
+      local name = group[2]
+      if string.sub(name, 1, 10) == 'ws-fanout-' then
+        local alive = false
+        for _, consumer in ipairs(redis.call('XINFO', 'CONSUMERS', stream, name)) do
+          -- flat reply: name, <v>, pending, <v>, idle, <v>, ...
+          if tonumber(consumer[6]) < max_idle_ms then
+            alive = true
+          end
+        end
+        if not alive then
+          redis.call('XGROUP', 'DESTROY', stream, name)
+          destroyed = destroyed + 1
+        end
+      end
+    end
+
+    return destroyed

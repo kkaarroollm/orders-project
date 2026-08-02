@@ -44,6 +44,10 @@ class StreamConsumer:
         routes: dict[str, Route[Any]],
         max_retries: int = 3,
         dlq_stream: str | None = "dead-letters",
+        start_id: str = "0",
+        noack: bool = False,
+        reset_on_bind: bool = False,
+        claim_pending: bool = True,
     ) -> None:
         self._redis = redis
         self._stream = stream
@@ -52,16 +56,27 @@ class StreamConsumer:
         self._routes = routes
         self._max_retries = max_retries
         self._dlq_stream = dlq_stream
+        self._start_id = start_id
+        self._noack = noack
+        self._reset_on_bind = reset_on_bind
+        self._reclaim_pending = claim_pending
         self._claim_cursor: str = "0-0"
 
     async def bind_group(self) -> None:
         try:
             await self._redis.xgroup_create(
-                name=self._stream, groupname=self._group, id="0", mkstream=True
+                name=self._stream, groupname=self._group, id=self._start_id, mkstream=True
             )
             logging.info("Bound group `%s` to stream `%s`", self._group, self._stream)
         except redis_exc.ResponseError as e:
-            logging.info("Binding group `%s` to stream `%s`: %s", self._group, self._stream, e)
+            if self._reset_on_bind:
+                # The group belongs to this process alone, so discarding
+                # everything from before it started is safe -- and required, or
+                # a restart would replay stale statuses to fresh clients.
+                await self._redis.xgroup_setid(self._stream, self._group, id=self._start_id)
+                logging.info("Reset group `%s` on `%s` to %s", self._group, self._stream, self._start_id)
+            else:
+                logging.info("Binding group `%s` to stream `%s`: %s", self._group, self._stream, e)
 
     async def listen(self) -> None:
         await self.bind_group()
@@ -77,7 +92,7 @@ class StreamConsumer:
         while True:
             # Periodically reclaim orphaned pending messages
             claim_counter += 1
-            if claim_counter % 6 == 0:  # every ~30s (6 * 5s block)
+            if self._reclaim_pending and claim_counter % 6 == 0:  # every ~30s (6 * 5s block)
                 await self._claim_pending()
 
             if not (messages := await self._read_messages()):
@@ -117,7 +132,8 @@ class StreamConsumer:
             await route.handler(event)
             duration = time.monotonic() - start
 
-            await self._redis.xack(self._stream, self._group, message_id)
+            if not self._noack:
+                await self._redis.xack(self._stream, self._group, message_id)
             STREAM_MESSAGES_TOTAL.labels(stream=self._stream, group=self._group, status="success").inc()
             STREAM_MESSAGE_DURATION.labels(stream=self._stream, group=self._group).observe(duration)
             logging.info(
@@ -133,7 +149,8 @@ class StreamConsumer:
             await self._handle_failure(message_id, message_data, e)
 
     async def _skip(self, message_id: bytes | str, event_type: str) -> None:
-        await self._redis.xack(self._stream, self._group, message_id)
+        if not self._noack:
+            await self._redis.xack(self._stream, self._group, message_id)
         STREAM_MESSAGES_TOTAL.labels(stream=self._stream, group=self._group, status="skipped").inc()
         logging.debug(
             "Skipped %s on %s/%s: no route for event `%s`",
@@ -149,6 +166,12 @@ class StreamConsumer:
         message_data: dict[str, Any],
         error: Exception,
     ) -> None:
+        if self._noack:
+            # Nothing is pending, so there is nothing to retry. Redelivering a
+            # live push to a client that has since gone is pointless anyway.
+            logging.warning("Dropping %s on %s/%s: %s", message_id, self._group, self._stream, error)
+            return
+
         retry_key = f"{self._stream}:retries:{message_id}"
         retries = await self._redis.incr(retry_key)
         await self._redis.expire(retry_key, 3600)  # cleanup after 1h
@@ -236,6 +259,7 @@ class StreamConsumer:
                 streams={self._stream: ">"},
                 count=count,
                 block=block,
+                noack=self._noack,
             )
         except redis_exc.ResponseError as e:
             logging.error("StreamConsumer._read_messages(): Error reading messages: %s", e)

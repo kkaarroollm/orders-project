@@ -10,6 +10,7 @@ class Settings(BaseServiceSettings):
     contact_email: str = "mkarol.4514@gmail.com"
 
     mongo_collection_orders: str = "orders"
+    mongo_collection_outbox: str = "outbox"
     mongo_collection_menu_items: str = "menu_items"
 
     # Stream names live on the event classes in `shared.events`.

@@ -1,15 +1,14 @@
 import logging
 from decimal import Decimal
-from typing import Any
 
 from pymongo import AsyncMongoClient
+from shared.db.outbox import MongoOutbox
 from shared.events.order import (
     OrderCreated,
     OrderSimulationRequested,
     OrderStatusChanged,
     OrderStatusSimulated,
 )
-from shared.redis.publisher import StreamProducer
 
 from src.repositories.menu_item_repo import MenuItemRepository
 from src.repositories.order_repository import OrderRepository
@@ -36,13 +35,13 @@ class OrderService(TransactionServiceMixin):
         self,
         order_repo: OrderRepository,
         menu_repo: MenuItemRepository,
-        publisher: StreamProducer[Any],
+        outbox: MongoOutbox,
         mongo_client: AsyncMongoClient,
     ) -> None:
         super().__init__(mongo_client)
         self._order_repo = order_repo
         self._menu_repo = menu_repo
-        self._publisher = publisher
+        self._outbox = outbox
 
     async def get(self, order_id: str) -> OrderSchema | None:
         return await self._order_repo.get_by_id(order_id, session=None)
@@ -66,38 +65,55 @@ class OrderService(TransactionServiceMixin):
                 order_data.total_price = total_price
                 order_id_str = await self._order_repo.create(order_data, session)
                 order_data.id = order_id_str
+
+                # Staged in the same transaction as the order: the relay
+                # publishes them once, and only if, this commits.
+                await self._outbox.add(
+                    OrderCreated(
+                        id=order_id_str,
+                        status=order_data.status.value,
+                        simulation=order_data.simulation,
+                    ),
+                    session,
+                    correlation_id=order_id_str,
+                )
+
+                if order_data.simulation != -1:
+                    await self._outbox.add(
+                        OrderSimulationRequested(id=order_id_str),
+                        session,
+                        correlation_id=order_id_str,
+                    )
         except OrderRejectedError as rejected:
             logging.info("Rejected order: %s", rejected.message)
             return OrderResponse(order=order_data, success=False, message=rejected.message)
-
-        await self._publisher.publish(
-            OrderCreated(id=order_id_str, status=order_data.status.value, simulation=order_data.simulation),
-            correlation_id=order_id_str,
-        )
-
-        if order_data.simulation != -1:
-            await self._publisher.publish(
-                OrderSimulationRequested(id=order_id_str),
-                correlation_id=order_id_str,
-            )
-            logging.info("Simulating order %s", order_id_str)
 
         return OrderResponse(order=order_data, success=True)
 
     async def update_order_status(self, order_id: str, new_status: OrderStatus) -> OrderResponse:
         async with self.transaction() as session:
-            updated = await self._order_repo.update_status(order_id, new_status, session)
+            order = await self._order_repo.advance_status(order_id, new_status, session)
+            if order:
+                await self._outbox.add(
+                    # The order's own simulation flag, not a default: consumers
+                    # decide whether to simulate from what the client asked for.
+                    OrderStatusChanged(
+                        id=order_id,
+                        status=new_status.value,
+                        simulation=order.simulation,
+                    ),
+                    session,
+                    correlation_id=order_id,
+                )
 
-        if updated:
-            await self._publisher.publish(
-                OrderStatusChanged(id=order_id, status=new_status.value),
-                correlation_id=order_id,
-            )
+        if order:
             return OrderResponse(order=None, success=True, message=f"Order {order_id} updated to {new_status}")
 
-        return OrderResponse(order=None, success=False, message="Order not found or update failed")
+        return OrderResponse(order=None, success=False, message="Order not found or transition not allowed")
 
     async def handle_status_update(self, event: OrderStatusSimulated) -> None:
         status = OrderStatus(event.status)
-        logging.info("Order %s updated to %s", event.id, status)
-        await self.update_order_status(event.id, status)
+        result = await self.update_order_status(event.id, status)
+        if not result.success:
+            # Stale or replayed transition: nothing to do, and not a failure.
+            logging.info("Ignored %s for order %s: %s", status, event.id, result.message)

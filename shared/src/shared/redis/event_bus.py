@@ -32,7 +32,7 @@ def terminate_on_failure(group: str, error: BaseException) -> None:
 class EventBus:
     """Manages stream subscriptions with retry, DLQ, and graceful lifecycle."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — keyword-only bus configuration
         self,
         redis: Redis,
         *,
@@ -40,12 +40,17 @@ class EventBus:
         max_retries: int = 3,
         dlq_stream: str | None = "dead-letters",
         on_consumer_failure: ConsumerFailureHandler | None = terminate_on_failure,
+        fanout: bool = False,
     ) -> None:
         self._redis = redis
         self._group = group
         self._max_retries = max_retries
-        self._dlq_stream = dlq_stream
+        self._dlq_stream = None if fanout else dlq_stream
         self._on_consumer_failure = on_consumer_failure
+        # Fanout mode: this group belongs to one process, every process gets
+        # every message, and nothing is retried. Persistence buys nothing for
+        # a live push -- a process that was down has no clients to push to.
+        self._fanout = fanout
         self._consumer_name = f"{group}-{socket.gethostname()}-{uuid.uuid4().hex[:6]}"
         self._routes: dict[str, dict[str, Route[Any]]] = defaultdict(dict)
         self._tasks: list[asyncio.Task[None]] = []
@@ -77,6 +82,10 @@ class EventBus:
                 routes=routes,
                 max_retries=self._max_retries,
                 dlq_stream=self._dlq_stream,
+                start_id="$" if self._fanout else "0",
+                noack=self._fanout,
+                reset_on_bind=self._fanout,
+                claim_pending=not self._fanout,
             )
             task = asyncio.create_task(consumer.listen())
             task.add_done_callback(self._on_task_done)
@@ -117,4 +126,14 @@ class EventBus:
                 logging.error("EventBus task error during shutdown: %s", result)
 
         self._tasks.clear()
+
+        if self._fanout:
+            # The group is this process's alone; leaving it behind would leak
+            # one dead group per pod restart.
+            for stream in self._routes:
+                try:
+                    await self._redis.xgroup_destroy(stream, self._group)
+                except Exception as error:
+                    logging.warning("Could not destroy fanout group `%s`: %s", self._group, error)
+
         logging.info("EventBus stopped for group '%s'", self._group)

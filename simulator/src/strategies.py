@@ -1,48 +1,29 @@
-import asyncio
-import logging
-from typing import Any
+from dataclasses import dataclass
 
+from shared.events.base import DomainEvent
 from shared.events.delivery import DeliveryStatusSimulated
 from shared.events.order import OrderStatusSimulated
-from shared.redis.publisher import StreamProducer
 
 from src.schemas import DeliveryStatus, OrderStatus, SimulationStream
 from src.settings import settings
 
 
-class OrderSimulationStrategy:
-    async def process(self, entity_id: str, producer: StreamProducer[Any]) -> None:
-        logging.info("Starting ORDER simulation for %s", entity_id)
-
-        for delay, status in (
-            (settings.order_confirming_delay, OrderStatus.PREPARING),
-            (settings.order_preparing_delay, OrderStatus.OUT_FOR_DELIVERY),
-        ):
-            await asyncio.sleep(delay)
-            await producer.publish(
-                OrderStatusSimulated(id=entity_id, status=status.value),
-                correlation_id=entity_id,
-            )
-            logging.info("Order %s -> %s", entity_id, status)
+@dataclass(frozen=True)
+class Step:
+    delay_seconds: int
+    status: str
+    event: type[DomainEvent]
 
 
-class DeliverySimulationStrategy:
-    async def process(self, entity_id: str, producer: StreamProducer[Any]) -> None:
-        logging.info("Starting DELIVERY simulation for %s", entity_id)
-
-        for delay, status in (
-            (settings.delivery_waiting_delay, DeliveryStatus.ON_THE_WAY),
-            (settings.delivery_way_delay, DeliveryStatus.DELIVERED),
-        ):
-            await asyncio.sleep(delay)
-            await producer.publish(
-                DeliveryStatusSimulated(id=entity_id, status=status.value),
-                correlation_id=entity_id,
-            )
-            logging.info("Delivery %s -> %s", entity_id, status)
-
-
-SIMULATION_STRATEGY: dict[SimulationStream, OrderSimulationStrategy | DeliverySimulationStrategy] = {
-    SimulationStream.ORDER: OrderSimulationStrategy(),
-    SimulationStream.DELIVERY: DeliverySimulationStrategy(),
+# Each simulation is a list of steps rather than a chain of sleeps: a step
+# fires, publishes, and schedules the next one as a durable timer.
+SIMULATION_STEPS: dict[SimulationStream, tuple[Step, ...]] = {
+    SimulationStream.ORDER: (
+        Step(settings.order_confirming_delay, OrderStatus.PREPARING.value, OrderStatusSimulated),
+        Step(settings.order_preparing_delay, OrderStatus.OUT_FOR_DELIVERY.value, OrderStatusSimulated),
+    ),
+    SimulationStream.DELIVERY: (
+        Step(settings.delivery_waiting_delay, DeliveryStatus.ON_THE_WAY.value, DeliveryStatusSimulated),
+        Step(settings.delivery_way_delay, DeliveryStatus.DELIVERED.value, DeliveryStatusSimulated),
+    ),
 }
