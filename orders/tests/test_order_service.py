@@ -59,6 +59,7 @@ def _make_order(**overrides):
         items=overrides.get(
             "items", [OrderedItemSchema(item_id="507f1f77bcf86cd799439011", quantity=2)]
         ),
+        simulation=overrides.get("simulation", 1),
     )
 
 
@@ -165,8 +166,32 @@ def test_out_of_range_simulation_rejected(simulation):
 
 
 @pytest.mark.asyncio
+async def test_status_event_carries_the_orders_own_simulation_flag(service, order_repo, outbox):
+    """`simulation: -1` must reach delivery, which decides whether to simulate.
+
+    It used to fall back to the event model's default of 1, so an order that
+    asked for no simulation got its delivery simulated anyway.
+    """
+    order_repo.advance_status.return_value = _make_order(simulation=-1)
+
+    await service.handle_status_update(OrderStatusSimulated(id="order123", status="out_for_delivery"))
+
+    assert outbox.add.call_args.args[0].simulation == -1
+
+
+@pytest.mark.asyncio
+async def test_illegal_transition_stages_no_event(service, order_repo, outbox):
+    """Replayed or out-of-order transitions match nothing and are dropped."""
+    order_repo.advance_status.return_value = None
+
+    await service.handle_status_update(OrderStatusSimulated(id="order123", status="preparing"))
+
+    outbox.add.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_handle_status_update(service, order_repo, outbox):
-    order_repo.update_status.return_value = True
+    order_repo.advance_status.return_value = _make_order()
 
     await service.handle_status_update(OrderStatusSimulated(id="order123", status="preparing"))
 

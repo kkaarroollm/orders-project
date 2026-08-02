@@ -5,6 +5,7 @@ from shared.events.delivery import (
     DeliveryStatusChanged,
     DeliveryStatusSimulated,
 )
+from shared.events.notifications import OrderStatusPush
 from shared.events.order import (
     OrderCreated,
     OrderSimulationRequested,
@@ -21,6 +22,7 @@ ALL_EVENTS: tuple[type[DomainEvent], ...] = (
     DeliveryStatusChanged,
     DeliverySimulationRequested,
     DeliveryStatusSimulated,
+    OrderStatusPush,
 )
 
 EVENT_REGISTRY: dict[str, type[DomainEvent]] = {}
@@ -43,6 +45,7 @@ __all__ = [
     "OrderEvent",
     "OrderSimulationRequested",
     "OrderStatusChanged",
+    "OrderStatusPush",
     "OrderStatusSimulated",
     "SimulationRequest",
 ]
