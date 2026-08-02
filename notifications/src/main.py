@@ -1,18 +1,17 @@
-import asyncio
-import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from prometheus_client import make_asgi_app
 from shared.http_metrics import GZipMiddleware, PrometheusMiddleware
 
 from src.lifespan import startup, teardown
 from src.routes import router
 from src.settings import settings
+from src.sse import event_stream, order_stream_registry
 from src.state import AppState
-from src.websockets import ws_order_status_manager
 
 
 @asynccontextmanager
@@ -34,34 +33,26 @@ app: FastAPI = FastAPI(
 )
 
 
-@app.websocket("/ws/v1/order-tracking/{order_id}")
-async def websocket_order_tracking(websocket: WebSocket, order_id: str) -> None:
-    await ws_order_status_manager.connect(order_id, websocket)
+@app.get("/api/v1/order-tracking/{order_id}")
+async def order_tracking(order_id: str) -> StreamingResponse:
+    """Server-sent events for one order.
+
+    Order tracking is one-way, so this needs no upgrade handshake: it is
+    covered by CORSMiddleware, reconnects natively, and needs no application
+    heartbeat.
+    """
     state: AppState = app.state.ctx
-    notifications_repo = state.notification_repository
+    snapshot = await state.notification_repository.get_order_status(order_id)
 
-    if status := await notifications_repo.get_order_status(order_id):
-        try:
-            await websocket.send_json(status)
-        except WebSocketDisconnect:
-            logging.warning("Client disconnected before receiving initial status: %s", order_id)
-            ws_order_status_manager.disconnect(order_id, websocket)
-            return
-
-    try:
-        while True:
-            try:
-                await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
-            except asyncio.TimeoutError:
-                try:
-                    await websocket.send_json({"type": "ping"})
-                except Exception:
-                    break
-    except WebSocketDisconnect:
-        pass
-    finally:
-        logging.info("WebSocket disconnected for order %s", order_id)
-        ws_order_status_manager.disconnect(order_id, websocket)
+    return StreamingResponse(
+        event_stream(order_stream_registry, order_id, snapshot),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            # Stops nginx buffering the stream into silence.
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 app.include_router(router)

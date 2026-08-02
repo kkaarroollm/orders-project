@@ -59,7 +59,7 @@ docker compose logs -f order-service
 |------|---------|
 | `/` | Frontend (Vite dev server) |
 | `/api/v1/orders`, `/api/v1/menu` | Order service |
-| `/ws/v1/order-tracking` | Notifications service (WebSocket) |
+| `/api/v1/order-tracking` | Notifications service (SSE) |
 | `/grafana/` | Grafana |
 | `/prometheus/` | Prometheus (GET-only) |
 
@@ -128,7 +128,7 @@ On first install, three Jobs run automatically:
 | Path | Service |
 |------|---------|
 | `/api/v1/orders`, `/api/v1/menu` | orders-svc:8003 |
-| `/ws/v1/order-tracking` | notifications-svc:8002 |
+| `/api/v1/order-tracking` | notifications-svc:8002 |
 | `/grafana` | grafana:80 |
 | `/` | frontend-svc:80 |
 

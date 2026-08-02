@@ -3,6 +3,12 @@ from decimal import Decimal
 from typing import Any
 
 from pymongo import AsyncMongoClient
+from shared.events.order import (
+    OrderCreated,
+    OrderSimulationRequested,
+    OrderStatusChanged,
+    OrderStatusSimulated,
+)
 from shared.redis.publisher import StreamProducer
 
 from src.repositories.menu_item_repo import MenuItemRepository
@@ -10,7 +16,19 @@ from src.repositories.order_repository import OrderRepository
 from src.responses import OrderResponse
 from src.schemas import OrderSchema, OrderStatus
 from src.services.mixins import TransactionServiceMixin
-from src.settings import settings
+
+
+class OrderRejectedError(Exception):
+    """Raised inside an order transaction so it aborts instead of committing.
+
+    Returning from inside `async with self.transaction()` is a *normal* context
+    exit, which commits -- leaving the stock already decremented for earlier
+    items while no order was created.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
 
 
 class OrderService(TransactionServiceMixin):
@@ -30,36 +48,37 @@ class OrderService(TransactionServiceMixin):
         return await self._order_repo.get_by_id(order_id, session=None)
 
     async def create_order_with_stock_check(self, order_data: OrderSchema) -> OrderResponse:
-        async with self.transaction() as session:
-            total_price = Decimal("0.00")
+        try:
+            async with self.transaction() as session:
+                total_price = Decimal("0.00")
 
-            for item in order_data.items:
-                menu_item = await self._menu_repo.get_by_id(item.item_id, session=None)
-                if not menu_item:
-                    return OrderResponse(
-                        order=order_data, success=False, message=f"Item with id={item.item_id} not found"
-                    )
+                for item in order_data.items:
+                    menu_item = await self._menu_repo.get_by_id(item.item_id, session=None)
+                    if not menu_item:
+                        raise OrderRejectedError(f"Item with id={item.item_id} not found")
 
-                success = await self._menu_repo.decrement_stock(item.item_id, item.quantity, session)
-                if not success:
-                    return OrderResponse(
-                        order=order_data, success=False, message=f"Not enough stock for item_id={item.item_id}"
-                    )
+                    success = await self._menu_repo.decrement_stock(item.item_id, item.quantity, session)
+                    if not success:
+                        raise OrderRejectedError(f"Not enough stock for item_id={item.item_id}")
 
-                total_price += Decimal(str(menu_item.price)) * item.quantity
+                    total_price += Decimal(str(menu_item.price)) * item.quantity
 
-            order_data.total_price = total_price
-            order_id_str = await self._order_repo.create(order_data, session)
-            order_data.id = order_id_str
+                order_data.total_price = total_price
+                order_id_str = await self._order_repo.create(order_data, session)
+                order_data.id = order_id_str
+        except OrderRejectedError as rejected:
+            logging.info("Rejected order: %s", rejected.message)
+            return OrderResponse(order=order_data, success=False, message=rejected.message)
 
-        order_dump = order_data.model_dump(mode="json")
-        await self._publisher.publish_raw(
-            settings.orders_stream, order_dump, event_type="order.created", correlation_id=order_id_str
+        await self._publisher.publish(
+            OrderCreated(id=order_id_str, status=order_data.status.value, simulation=order_data.simulation),
+            correlation_id=order_id_str,
         )
 
         if order_data.simulation != -1:
-            await self._publisher.publish_raw(
-                settings.simulate_order_stream, order_dump, event_type="order.simulate", correlation_id=order_id_str
+            await self._publisher.publish(
+                OrderSimulationRequested(id=order_id_str),
+                correlation_id=order_id_str,
             )
             logging.info("Simulating order %s", order_id_str)
 
@@ -70,17 +89,15 @@ class OrderService(TransactionServiceMixin):
             updated = await self._order_repo.update_status(order_id, new_status, session)
 
         if updated:
-            await self._publisher.publish_raw(
-                settings.orders_stream,
-                {"id": order_id, "status": new_status.value},
-                event_type="order.status_updated",
+            await self._publisher.publish(
+                OrderStatusChanged(id=order_id, status=new_status.value),
                 correlation_id=order_id,
             )
             return OrderResponse(order=None, success=True, message=f"Order {order_id} updated to {new_status}")
 
         return OrderResponse(order=None, success=False, message="Order not found or update failed")
 
-    async def handle_status_update(self, msg: Any) -> None:
-        status = OrderStatus(msg.status)
-        logging.info("Order %s updated to %s", msg.id, status)
-        await self.update_order_status(msg.id, status)
+    async def handle_status_update(self, event: OrderStatusSimulated) -> None:
+        status = OrderStatus(event.status)
+        logging.info("Order %s updated to %s", event.id, status)
+        await self.update_order_status(event.id, status)

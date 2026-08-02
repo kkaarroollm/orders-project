@@ -12,11 +12,8 @@ class Settings(BaseServiceSettings):
     mongo_collection_orders: str = "orders"
     mongo_collection_menu_items: str = "menu_items"
 
-    orders_stream: str = "orders-stream"
+    # Stream names live on the event classes in `shared.events`.
     orders_group: str = "orders-group"
-
-    simulate_order_stream: str = "simulate-order-stream"
-    order_status_stream: str = "order-status-stream"
 
 
 settings = Settings()

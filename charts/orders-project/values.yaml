@@ -30,9 +30,10 @@ ingress:
   className: nginx
   annotations:
     kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/enable-websocket: "true"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "7200"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "7200"
+    # Server-sent events must reach the client as they are produced.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
 
 kube-prometheus-stack:
   enabled: true

@@ -9,7 +9,7 @@ Deployed on a self-hosted Kubernetes cluster (Raspberry Pi) at [orders.karolmars
 - **Event-driven choreography** -- services communicate exclusively through Redis Streams, with no synchronous inter-service calls
 - **Guaranteed message delivery** -- consumer groups, automatic retries, and a dead-letter queue ensure no event is silently lost
 - **ACID transactions + eventual consistency** -- MongoDB transactions guard local state, while async events propagate changes across services
-- **Real-time push** -- WebSocket connections deliver order status updates to the browser the moment they happen
+- **Real-time push** -- server-sent events deliver order status updates to the browser the moment they happen
 - **Full observability** -- Prometheus metrics, Grafana dashboards, and Loki log aggregation with structured correlation IDs
 - **Dual deployment** -- runs identically on Docker Compose (local) and Kubernetes with Helm (production)
 

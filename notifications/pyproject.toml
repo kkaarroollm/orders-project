@@ -5,50 +5,8 @@ description = "Notifications microservice for food delivery platform"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]==0.115.11",
-    "pydantic-settings>=2.8.1",
-    "redis==5.2.1",
-    "shared",
-]
-
-[dependency-groups]
-dev = [
-    "ty>=0.0.1a7",
-    "ruff==0.11.0",
-    "pytest>=8.0",
-    "pytest-asyncio>=0.24",
+    "shared[web]",
 ]
 
 [tool.uv.sources]
 shared = { workspace = true }
-
-[tool.ty.environment]
-python-version = "3.13"
-
-[tool.ruff]
-line-length = 120
-target-version = "py313"
-fix = false
-include = [
-    "src/**/*.py",
-]
-
-[tool.ruff.lint]
-select = ["I", "PL", "F401", "F841", "N", "R", "E501"]
-ignore = []
-fixable = ["ALL"]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-
-[tool.ruff.lint.isort]
-section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
-
-[tool.ruff.lint.pep8-naming]
-classmethod-decorators = [
-    "pydantic.validator",
-    "pydantic.field_validator",
-    "declared_attr",
-    "expression",
-    "comparator"
-]

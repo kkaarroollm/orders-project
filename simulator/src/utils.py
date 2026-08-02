@@ -12,7 +12,7 @@ SEMAPHORE = asyncio.Semaphore(10)
 
 async def handle_simulation_event(
     stream: SimulationStream,
-    data: dict[str, Any],
+    entity_id: str,
     producer: StreamProducer[Any],
 ) -> None:
     strategy = SIMULATION_STRATEGY.get(stream)
@@ -20,10 +20,10 @@ async def handle_simulation_event(
         logging.warning("No simulation strategy found for stream: %s", stream)
         return
 
-    logging.info("Received simulation event for `%s` on `%s`", data.get("id"), stream.source)
+    logging.info("Received %s simulation event for `%s`", stream.name, entity_id)
 
     async def run() -> None:
         async with SEMAPHORE:
-            await strategy.process(entity_id=data["id"], producer=producer, output_stream=stream.target)
+            await strategy.process(entity_id=entity_id, producer=producer)
 
     asyncio.create_task(run())

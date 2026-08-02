@@ -11,7 +11,9 @@ async def liveness() -> Response:
 @router.get("/readiness")
 async def readiness(request: Request) -> Response:
     ctx = getattr(request.app.state, "ctx", None)
-    if not ctx or not ctx.ready:
+    # A live HTTP server with dead stream consumers is not ready: it would keep
+    # taking traffic while no events are processed.
+    if not ctx or not ctx.ready or (ctx.event_bus and not ctx.event_bus.healthy):
         return Response(
             content='{"status":"not ready"}',
             media_type="application/json",

@@ -11,7 +11,7 @@
 | **Repository Pattern** | `shared/db/repository.py` | Generic async CRUD abstraction over MongoDB with type safety |
 | **Transaction Manager** | `shared/db/mongo.py` | Context-managed sessions for atomic multi-document operations |
 | **Strategy Pattern** | Simulator service | Pluggable simulation strategies per entity type (order vs delivery) |
-| **API Gateway** | NGINX reverse proxy | Single entry point with rate limiting, WebSocket upgrade, security headers |
+| **API Gateway** | NGINX reverse proxy | Single entry point with rate limiting, SSE stream passthrough, security headers |
 | **Write-Then-Publish** | Order creation flow | Avoids dual-write problem -- event published only after DB transaction commits |
 
 ---
@@ -62,11 +62,12 @@ await publisher.publish(orders_stream, order_event)
 | Layer | Protocol | Purpose |
 |-------|----------|---------|
 | Client ↔ API | **REST** (HTTP/1.1) | Order creation, menu queries |
-| Client ↔ Notifications | **WebSocket** | Real-time order tracking with ping/pong keepalive |
+| Client → Notifications | **Server-sent events** | Real-time order tracking, one-way, native reconnect |
 | Service ↔ Service | **Redis Streams** | Async event-driven messaging with consumer groups |
 | Service ↔ MongoDB | **Wire Protocol** | ACID transactions over replica set |
 
-No gRPC, no GraphQL, no SSE -- intentionally simple protocol choices.
+No gRPC, no GraphQL, no WebSockets -- intentionally simple protocol choices.
+Order tracking is one-way, so it uses SSE rather than an upgrade handshake.
 
 ---
 
@@ -157,7 +158,7 @@ The `correlation_id` follows an event across all services and appears in every l
                     │ Delivery Svc │      │ Notifications Svc│
                     └──────┬───────┘      └────────┬─────────┘
                            │                       │
-                           │ delivery.created      │ WebSocket push
+                           │ delivery.created      │ SSE push
                            ▼                       ▼
                    ┌─────────────────┐     ┌─────────┐
                    │deliveries-stream│────▶│ Browser  │

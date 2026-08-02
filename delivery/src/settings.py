@@ -10,11 +10,9 @@ class Settings(BaseServiceSettings):
     contact_email: str = "mkarol.4514@gmail.com"
 
     mongo_collection_deliveries: str = "deliveries"
+    mongo_collection_inbox: str = "processed_events"
 
-    orders_stream: str = "orders-stream"
-    deliveries_stream: str = "deliveries-stream"
-    simulate_delivery_stream: str = "simulate-delivery-stream"
-    delivery_status_stream: str = "delivery-status-stream"
+    # Stream names live on the event classes in `shared.events`.
     delivery_group: str = "delivery-group"
 
 

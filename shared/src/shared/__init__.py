@@ -1,24 +1,11 @@
-from shared.db.mongo import MongoTransactionManager, connect_mongo
-from shared.db.repository import MongoRepository
-from shared.redis.connection import connect_redis
-from shared.redis.consumer import StreamConsumer
-from shared.redis.envelope import MessageEnvelope
-from shared.redis.event_bus import EventBus
-from shared.redis.publisher import StreamProducer
-from shared.schemas.base import BaseDocument, StrObjectId
-from shared.settings import BaseServiceSettings, EnvironmentEnum
+"""Shared library for orders-project microservices.
 
-__all__ = [
-    "BaseDocument",
-    "BaseServiceSettings",
-    "EnvironmentEnum",
-    "EventBus",
-    "MessageEnvelope",
-    "MongoRepository",
-    "MongoTransactionManager",
-    "StreamConsumer",
-    "StreamProducer",
-    "StrObjectId",
-    "connect_mongo",
-    "connect_redis",
-]
+Import from the submodule that owns the symbol, e.g.::
+
+    from shared.redis.publisher import StreamProducer
+    from shared.db.repository import MongoRepository
+
+Nothing is re-exported here on purpose: `shared.db` needs the `mongo` extra and
+`shared.http_metrics` needs the `web` extra, so eager re-exports would force
+every consumer to install both.
+"""

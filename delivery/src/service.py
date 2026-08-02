@@ -1,6 +1,17 @@
 import logging
 from typing import Any, Final
 
+from pymongo import AsyncMongoClient
+from pymongo.errors import DuplicateKeyError
+from shared.db.inbox import MongoInbox
+from shared.db.mongo import MongoTransactionManager
+from shared.events.base import OrderEvent
+from shared.events.delivery import (
+    DeliveryCreated,
+    DeliverySimulationRequested,
+    DeliveryStatusChanged,
+    DeliveryStatusSimulated,
+)
 from shared.redis.publisher import StreamProducer
 
 from src.repository import DeliveryRepository
@@ -11,52 +22,69 @@ from src.settings import settings
 class DeliveryService:
     OUT_FOR_DELIVERY: Final = "out_for_delivery"
 
-    def __init__(self, repo: DeliveryRepository, publisher: StreamProducer[Any]) -> None:
+    def __init__(
+        self,
+        repo: DeliveryRepository,
+        publisher: StreamProducer[Any],
+        inbox: MongoInbox,
+        mongo_client: AsyncMongoClient,
+    ) -> None:
         self._repo = repo
         self._publisher = publisher
+        self._inbox = inbox
+        self._mongo_client = mongo_client
 
-    async def handle_order(self, msg: Any) -> None:
-        if msg.status != self.OUT_FOR_DELIVERY:
-            logging.info("Skipping order %s, status not '%s'", msg.id, self.OUT_FOR_DELIVERY)
+    async def handle_order(self, event: OrderEvent) -> None:
+        if event.status != self.OUT_FOR_DELIVERY:
+            logging.info("Skipping order %s, status not '%s'", event.id, self.OUT_FOR_DELIVERY)
             return
 
-        delivery = DeliverySchema(order_id=msg.id)
-        delivery_id = await self._repo.create(delivery)
-        logging.info("Created delivery %s", delivery_id)
+        delivery = DeliverySchema(order_id=event.id)
+        if not await self._create_once(event.event_id, delivery):
+            logging.info("Delivery for order %s already created, skipping duplicate", event.id)
+            return
 
-        await self._publisher.publish_raw(
-            settings.deliveries_stream,
-            delivery.model_dump(mode="json"),
-            event_type="delivery.created",
-            correlation_id=msg.id,
+        logging.info("Created delivery for order %s", event.id)
+
+        await self._publisher.publish(
+            DeliveryCreated(order_id=event.id, status=delivery.status.value),
+            correlation_id=event.id,
         )
 
-        if getattr(msg, "simulation", -1) != -1:
-            await self._publisher.publish_raw(
-                settings.simulate_delivery_stream,
-                msg.model_dump(mode="json"),
-                event_type="delivery.simulate",
-                correlation_id=msg.id,
+        if event.simulation != -1:
+            await self._publisher.publish(
+                DeliverySimulationRequested(id=event.id),
+                correlation_id=event.id,
             )
-            logging.info("Simulating delivery for %s", delivery_id)
+            logging.info("Simulating delivery for order %s", event.id)
 
-    async def handle_status_update(self, msg: Any) -> None:
-        order_id = getattr(msg, "order_id", None) or msg.id
-        if not order_id:
-            raise ValueError("DeliveryService.handle_status_update: Missing order_id in status update")
+    async def _create_once(self, event_id: str, delivery: DeliverySchema) -> bool:
+        """Create the delivery unless this event was already applied.
 
+        The inbox insert shares the transaction with the create, so a redelivery
+        hits the unique index, aborts the whole transaction, and leaves no
+        second delivery behind.
+        """
+        try:
+            async with MongoTransactionManager(self._mongo_client) as session:
+                await self._inbox.record(settings.delivery_group, event_id, session)
+                await self._repo.create(delivery, session)
+        except DuplicateKeyError:
+            return False
+        return True
+
+    async def handle_status_update(self, event: DeliveryStatusSimulated) -> None:
+        order_id = event.id
         delivery = await self._repo.find_one({"order_id": order_id})
 
         if not (delivery and delivery.id):
             raise ValueError(f"DeliveryService.handle_status_update: Delivery not found for order_id {order_id}")
 
-        new_status = DeliveryStatus(msg.status)
+        new_status = DeliveryStatus(event.status)
 
+        # Idempotent by construction: applying the same status twice is a no-op.
         if await self._repo.update_status(delivery.id, new_status):
-            delivery.status = new_status
-            await self._publisher.publish_raw(
-                settings.deliveries_stream,
-                delivery.model_dump(mode="json"),
-                event_type="delivery.status_updated",
+            await self._publisher.publish(
+                DeliveryStatusChanged(order_id=order_id, status=new_status.value),
                 correlation_id=order_id,
             )
