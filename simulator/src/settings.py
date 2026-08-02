@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # Stream names live on the event classes in `shared.events`.
     simulator_group: str = "simulator-group"
+    scheduler_key: str = "simulation-timers"
     metrics_port: int = 9090
 
     order_confirming_delay: int = 20

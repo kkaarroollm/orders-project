@@ -91,12 +91,25 @@ async def test_handle_status_update_success(service, delivery_repo, publisher):
     delivery = DeliverySchema(order_id="order123")
     delivery.id = "del123"
     delivery_repo.find_one.return_value = delivery
-    delivery_repo.update_status.return_value = True
+    delivery_repo.advance_status.return_value = True
 
     await service.handle_status_update(DeliveryStatusSimulated(id="order123", status="on_the_way"))
 
-    delivery_repo.update_status.assert_called_once_with("del123", DeliveryStatus.ON_THE_WAY)
+    delivery_repo.advance_status.assert_called_once_with("del123", DeliveryStatus.ON_THE_WAY)
     publisher.publish.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_illegal_status_transition_publishes_nothing(service, delivery_repo, publisher):
+    """A late `on_the_way` after `delivered` must not move the delivery back."""
+    delivery = DeliverySchema(order_id="order123")
+    delivery.id = "del123"
+    delivery_repo.find_one.return_value = delivery
+    delivery_repo.advance_status.return_value = False
+
+    await service.handle_status_update(DeliveryStatusSimulated(id="order123", status="on_the_way"))
+
+    publisher.publish.assert_not_called()
 
 
 @pytest.mark.asyncio

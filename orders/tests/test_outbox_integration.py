@@ -13,7 +13,7 @@ from shared.db.outbox import MongoOutbox, OutboxRelay
 
 from src.repositories.menu_item_repo import MenuItemRepository
 from src.repositories.order_repository import OrderRepository
-from src.schemas import MenuItemSchema, OrderSchema, OrderedItemSchema, OrderingPersonSchema
+from src.schemas import OrderedItemSchema, OrderingPersonSchema, OrderSchema, OrderStatus
 from src.services.order_service import OrderService
 
 MONGO_URL = os.environ.get("INTEGRATION_MONGO_URL")
@@ -97,6 +97,29 @@ async def test_relay_publishes_events_staged_before_it_started(service, database
     assert await relay.sweep() == 2
     assert producer.publish_raw.await_count == 2
     assert await database["outbox"].count_documents({"published_at": None}) == 0
+
+
+@pytest.mark.asyncio
+async def test_status_cannot_move_backwards(service, database, menu_item_id):
+    """A replayed `preparing` must not undo `out_for_delivery`."""
+    order_id = (await service.create_order_with_stock_check(_order(menu_item_id))).order.id
+
+    assert (await service.update_order_status(order_id, OrderStatus.PREPARING)).success
+    assert (await service.update_order_status(order_id, OrderStatus.OUT_FOR_DELIVERY)).success
+    assert not (await service.update_order_status(order_id, OrderStatus.PREPARING)).success
+
+    stored = await database["orders"].find_one({})
+    assert stored["status"] == "out_for_delivery"
+    assert stored["version"] == 2
+
+
+@pytest.mark.asyncio
+async def test_skipping_a_status_is_rejected(service, database, menu_item_id):
+    """`confirmed` -> `out_for_delivery` skips a step and must not apply."""
+    order_id = (await service.create_order_with_stock_check(_order(menu_item_id))).order.id
+
+    assert not (await service.update_order_status(order_id, OrderStatus.OUT_FOR_DELIVERY)).success
+    assert (await database["orders"].find_one({}))["status"] == "confirmed"
 
 
 @pytest.mark.asyncio

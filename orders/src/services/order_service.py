@@ -92,20 +92,28 @@ class OrderService(TransactionServiceMixin):
 
     async def update_order_status(self, order_id: str, new_status: OrderStatus) -> OrderResponse:
         async with self.transaction() as session:
-            updated = await self._order_repo.update_status(order_id, new_status, session)
-            if updated:
+            order = await self._order_repo.advance_status(order_id, new_status, session)
+            if order:
                 await self._outbox.add(
-                    OrderStatusChanged(id=order_id, status=new_status.value),
+                    # The order's own simulation flag, not a default: consumers
+                    # decide whether to simulate from what the client asked for.
+                    OrderStatusChanged(
+                        id=order_id,
+                        status=new_status.value,
+                        simulation=order.simulation,
+                    ),
                     session,
                     correlation_id=order_id,
                 )
 
-        if updated:
+        if order:
             return OrderResponse(order=None, success=True, message=f"Order {order_id} updated to {new_status}")
 
-        return OrderResponse(order=None, success=False, message="Order not found or update failed")
+        return OrderResponse(order=None, success=False, message="Order not found or transition not allowed")
 
     async def handle_status_update(self, event: OrderStatusSimulated) -> None:
         status = OrderStatus(event.status)
-        logging.info("Order %s updated to %s", event.id, status)
-        await self.update_order_status(event.id, status)
+        result = await self.update_order_status(event.id, status)
+        if not result.success:
+            # Stale or replayed transition: nothing to do, and not a failure.
+            logging.info("Ignored %s for order %s: %s", status, event.id, result.message)
