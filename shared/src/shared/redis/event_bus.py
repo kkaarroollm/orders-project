@@ -12,8 +12,11 @@ from redis.asyncio import Redis
 
 from shared.events.base import DomainEvent
 from shared.redis.consumer import Route, StreamConsumer
+from shared.redis.metrics import STREAM_GROUP_LAG
 
 T = TypeVar("T", bound=DomainEvent)
+
+_LAG_INTERVAL_SECONDS = 15.0
 
 ConsumerFailureHandler = Callable[[str, BaseException], None]
 
@@ -91,11 +94,34 @@ class EventBus:
             task.add_done_callback(self._on_task_done)
             self._tasks.append(task)
 
+        lag_task = asyncio.create_task(self._report_lag())
+        lag_task.add_done_callback(self._on_task_done)
+        self._tasks.append(lag_task)
+
         logging.info(
             "EventBus started: %d stream consumer(s) in group '%s'",
-            len(self._tasks),
+            len(self._tasks) - 1,
             self._group,
         )
+
+    async def _report_lag(self) -> None:
+        """Publish per-group lag.
+
+        Streams are trimmed by `MAXLEN`, so a consumer that falls far enough
+        behind has its backlog silently discarded. Lag is the signal that
+        happens *before* that, which makes it the number worth alerting on.
+        """
+        while True:
+            for stream in self._routes:
+                try:
+                    for group in await self._redis.xinfo_groups(stream):
+                        if group.get("name") != self._group:
+                            continue
+                        if (lag := group.get("lag")) is not None:
+                            STREAM_GROUP_LAG.labels(stream=stream, group=self._group).set(lag)
+                except Exception as error:  # stream may not exist yet
+                    logging.debug("Could not read lag for `%s`: %s", stream, error)
+            await asyncio.sleep(_LAG_INTERVAL_SECONDS)
 
     def _on_task_done(self, task: asyncio.Task[None]) -> None:
         """`listen()` loops forever, so any completion at all is a failure."""
