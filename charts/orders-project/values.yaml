@@ -92,3 +92,25 @@ loki:
 promtail:
   enabled: true
 
+
+# Scale stream consumers on backlog rather than CPU. Off by default: it needs
+# KEDA installed in the cluster.
+keda:
+  enabled: false
+  consumers:
+    - name: orders
+      minReplicas: 1
+      maxReplicas: 4
+      streams:
+        - stream: order-status-stream
+          group: orders-group
+          lagCount: 50
+    - name: delivery
+      minReplicas: 1
+      maxReplicas: 4
+      streams:
+        - stream: orders-stream
+          group: delivery-group
+          lagCount: 50
+    # notifications is deliberately absent: it is bound by how many SSE streams
+    # it holds, not by backlog, so lag is the wrong signal for it.

@@ -12,5 +12,8 @@ class MessageEnvelope(BaseModel, Generic[T]):
     event_type: str
     correlation_id: str = ""
     source: str = ""
+    # W3C trace context, so a consumer can continue the producer's trace across
+    # the stream. Empty when tracing is off.
+    traceparent: str = ""
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     payload: dict[str, Any] = Field(default_factory=dict)

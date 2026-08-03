@@ -5,7 +5,7 @@ description = "Delivery microservice for food delivery platform"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "shared[mongo,web]",
+    "shared[mongo,web,otel]",
 ]
 
 [tool.uv.sources]
