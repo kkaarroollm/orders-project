@@ -100,6 +100,11 @@ so a replayed or late event matches no document and is dropped.
 **Poison messages are quarantined.** Three failures, then the `dead-letters`
 stream, with the original payload and error preserved.
 
+**Retries do not double-order.** `POST /orders` accepts an `Idempotency-Key`.
+The key is reserved inside the order's transaction, so it is only consumed if
+the order is actually created — a rejected order leaves the key usable, and a
+client that times out and retries gets its original result back.
+
 The relay uses a change stream for latency and a 30-second sweep for
 correctness. The sweep alone is sufficient — it covers a relay that was down, a
 publish that failed, and a resume token that aged out of the oplog — so the
@@ -127,7 +132,8 @@ resumes rather than stranding orders.
 
 1. **Redis memory** — streams are trimmed with `MAXLEN`, but retention is still
    RAM. Trimming under a stalled consumer silently drops events, so consumer lag
-   is the metric to alert on.
+   is the metric to alert on: every bus reports `stream_group_lag` per stream
+   and group, which rises well before trimming starts discarding a backlog.
 2. **MongoDB writes** — a single replica set primary takes every write. Read
    replicas help reads; write scaling needs sharding.
 3. **The stateful edge** — SSE streams are long-lived connections, so

@@ -1,4 +1,10 @@
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
+
+STREAM_GROUP_LAG = Gauge(
+    "stream_group_lag",
+    "Entries added to the stream that this group has not yet delivered",
+    ["stream", "group"],
+)
 
 STREAM_MESSAGES_TOTAL = Counter(
     "stream_messages_processed_total",

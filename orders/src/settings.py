@@ -11,6 +11,7 @@ class Settings(BaseServiceSettings):
 
     mongo_collection_orders: str = "orders"
     mongo_collection_outbox: str = "outbox"
+    mongo_collection_idempotency: str = "idempotency_keys"
     mongo_collection_menu_items: str = "menu_items"
 
     # Stream names live on the event classes in `shared.events`.

@@ -27,6 +27,13 @@ def outbox():
 
 
 @pytest.fixture
+def idempotency():
+    store = AsyncMock()
+    store.find.return_value = None
+    return store
+
+
+@pytest.fixture
 def mongo_client():
     client = MagicMock()
     session = AsyncMock()
@@ -39,11 +46,12 @@ def mongo_client():
 
 
 @pytest.fixture
-def service(order_repo, menu_repo, outbox, mongo_client):
+def service(order_repo, menu_repo, outbox, idempotency, mongo_client):
     return OrderService(
         order_repo=order_repo,
         menu_repo=menu_repo,
         outbox=outbox,
+        idempotency=idempotency,
         mongo_client=mongo_client,
     )
 
