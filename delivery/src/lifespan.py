@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from shared.db.inbox import MongoInbox
 from shared.logging import setup_logging
 from shared.redis.publisher import StreamProducer
+from shared.tracing import setup_tracing
 
 from src.databases import close_databases, connect_databases
 from src.repository import DeliveryRepository
@@ -16,6 +17,7 @@ from src.streams import setup_streams, stop_streams
 
 async def startup(app: FastAPI) -> None:
     setup_logging()
+    setup_tracing("delivery-service")
     mongo_client, database, redis_client = await connect_databases()
 
     delivery_repo = DeliveryRepository(

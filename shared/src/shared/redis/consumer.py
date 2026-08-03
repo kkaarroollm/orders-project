@@ -10,6 +10,7 @@ from redis.asyncio import Redis
 from shared.events.base import DomainEvent
 from shared.redis.envelope import MessageEnvelope
 from shared.redis.metrics import STREAM_DLQ_TOTAL, STREAM_MESSAGE_DURATION, STREAM_MESSAGES_TOTAL
+from shared.tracing import consumer_span
 
 TEvent = TypeVar("TEvent", bound=DomainEvent)
 
@@ -129,7 +130,19 @@ class StreamConsumer:
 
             event = route.event.model_validate(envelope.payload)
             start = time.monotonic()
-            await route.handler(event)
+            with consumer_span(
+                f"{self._stream} process",
+                envelope.traceparent,
+                **{
+                    "messaging.system": "redis_streams",
+                    "messaging.destination.name": self._stream,
+                    "messaging.consumer.group.name": self._group,
+                    "messaging.message.id": str(message_id),
+                    "event.type": envelope.event_type,
+                    "correlation.id": correlation_id,
+                },
+            ):
+                await route.handler(event)
             duration = time.monotonic() - start
 
             if not self._noack:

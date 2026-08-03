@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pymongo import AsyncMongoClient
+from shared.db.idempotency import IdempotencyStore
 from shared.db.outbox import MongoOutbox, OutboxRelay
 
 from src.repositories.menu_item_repo import MenuItemRepository
@@ -25,7 +26,7 @@ pytestmark = pytest.mark.skipif(not MONGO_URL, reason="INTEGRATION_MONGO_URL not
 async def database():
     client: AsyncMongoClient = AsyncMongoClient(MONGO_URL)
     db = client["orders-integration-test"]
-    for name in ("orders", "outbox", "menu_items"):
+    for name in ("orders", "outbox", "menu_items", "idempotency_keys"):
         await db[name].delete_many({})
     yield db
     await client.close()
@@ -47,11 +48,19 @@ async def outbox(database):
 
 
 @pytest.fixture
-async def service(database, outbox):
+async def idempotency(database):
+    store = IdempotencyStore(collection=database["idempotency_keys"])
+    await store.ensure_indexes()
+    return store
+
+
+@pytest.fixture
+async def service(database, outbox, idempotency):
     return OrderService(
         order_repo=OrderRepository(collection=database["orders"]),
         menu_repo=MenuItemRepository(collection=database["menu_items"]),
         outbox=outbox,
+        idempotency=idempotency,
         mongo_client=database.client,
     )
 
@@ -120,6 +129,36 @@ async def test_skipping_a_status_is_rejected(service, database, menu_item_id):
 
     assert not (await service.update_order_status(order_id, OrderStatus.OUT_FOR_DELIVERY)).success
     assert (await database["orders"].find_one({}))["status"] == "confirmed"
+
+
+@pytest.mark.asyncio
+async def test_retry_with_the_same_key_creates_one_order(service, database, menu_item_id):
+    """A client that times out and retries must not order twice."""
+    first = await service.create_order_with_stock_check(_order(menu_item_id), "key-abc")
+    second = await service.create_order_with_stock_check(_order(menu_item_id), "key-abc")
+
+    assert first.order.id == second.order.id
+    assert await database["orders"].count_documents({}) == 1
+    assert (await database["menu_items"].find_one({}))["stock"] == 4
+
+
+@pytest.mark.asyncio
+async def test_different_keys_create_different_orders(service, database, menu_item_id):
+    await service.create_order_with_stock_check(_order(menu_item_id), "key-abc")
+    await service.create_order_with_stock_check(_order(menu_item_id), "key-xyz")
+
+    assert await database["orders"].count_documents({}) == 2
+
+
+@pytest.mark.asyncio
+async def test_rejected_order_does_not_burn_its_key(service, database, menu_item_id):
+    """The reservation rolls back with the order, so the key stays usable."""
+    rejected = await service.create_order_with_stock_check(_order(menu_item_id, quantity=99), "key-abc")
+    assert rejected.success is False
+    assert await database["idempotency_keys"].count_documents({}) == 0
+
+    accepted = await service.create_order_with_stock_check(_order(menu_item_id), "key-abc")
+    assert accepted.success is True
 
 
 @pytest.mark.asyncio

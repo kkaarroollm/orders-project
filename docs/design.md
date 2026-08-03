@@ -100,6 +100,11 @@ so a replayed or late event matches no document and is dropped.
 **Poison messages are quarantined.** Three failures, then the `dead-letters`
 stream, with the original payload and error preserved.
 
+**Retries do not double-order.** `POST /orders` accepts an `Idempotency-Key`.
+The key is reserved inside the order's transaction, so it is only consumed if
+the order is actually created — a rejected order leaves the key usable, and a
+client that times out and retries gets its original result back.
+
 The relay uses a change stream for latency and a 30-second sweep for
 correctness. The sweep alone is sufficient — it covers a relay that was down, a
 publish that failed, and a resume token that aged out of the oplog — so the
@@ -127,7 +132,8 @@ resumes rather than stranding orders.
 
 1. **Redis memory** — streams are trimmed with `MAXLEN`, but retention is still
    RAM. Trimming under a stalled consumer silently drops events, so consumer lag
-   is the metric to alert on.
+   is the metric to alert on: every bus reports `stream_group_lag` per stream
+   and group, which rises well before trimming starts discarding a backlog.
 2. **MongoDB writes** — a single replica set primary takes every write. Read
    replicas help reads; write scaling needs sharding.
 3. **The stateful edge** — SSE streams are long-lived connections, so
@@ -142,13 +148,37 @@ Honest limitations, rather than a feature list:
 - **No payments**, which is exactly why no saga is needed yet.
 - **Menu reads hit MongoDB** on every request. An obvious cache, deliberately not
   built until there is load to justify invalidation.
-- **Correlation IDs, not traces.** Every log line carries an id and Loki joins
-  them. Real spans need OpenTelemetry and a backend to hold them.
+- **Tracing needs a collector.** Spans are produced and propagate across
+  streams, but nothing collects them unless `OTEL_EXPORTER_OTLP_ENDPOINT` points
+  somewhere. Correlation IDs in Loki remain the default way to follow an order.
 - **The dead-letter stream has no replay tool.** Inspection is manual.
 
 ## Observability
 
-Prometheus scrapes per-service RED metrics and per-stream counters. Grafana
-dashboards ship in the chart. Loki holds structured logs, each line carrying the
-`correlation_id` that follows an event across every service — which is how a
-single order is traced end to end without a tracing system.
+Prometheus scrapes per-service RED metrics, per-stream counters and
+`stream_group_lag`. Grafana dashboards ship in the chart. Loki holds structured
+logs, each line carrying the `correlation_id` that follows an event across every
+service — which is how a single order is followed end to end without a tracing
+backend.
+
+Tracing is available but optional. It turns on only when
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set, and the `otel` extra can be left
+uninstalled entirely. The part that automatic instrumentation cannot do for you
+is the stream hop: a publisher writes W3C trace context into the message
+envelope and the consumer continues that trace, so an order and the delivery it
+causes land in **one** trace rather than several disconnected ones.
+
+## Scaling on backlog
+
+Stream consumers scale on lag, not CPU. They are IO-bound, so a service can be
+thousands of messages behind while barely touching a core — CPU would never
+trigger. KEDA `ScaledObject`s ship in the chart, disabled by default since they
+need KEDA installed:
+
+```yaml
+keda:
+  enabled: true
+```
+
+Notifications is deliberately excluded: it is bound by how many SSE streams it
+holds open, so backlog is the wrong signal for it.

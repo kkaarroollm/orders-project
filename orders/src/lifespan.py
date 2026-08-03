@@ -3,10 +3,12 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI
+from shared.db.idempotency import IdempotencyStore
 from shared.db.outbox import MongoOutbox, OutboxRelay
 from shared.logging import setup_logging
 from shared.redis.event_bus import terminate_on_failure
 from shared.redis.publisher import StreamProducer
+from shared.tracing import setup_tracing
 
 from src.databases import close_databases, connect_databases
 from src.repositories.menu_item_repo import MenuItemRepository
@@ -31,6 +33,7 @@ def _on_relay_stopped(task: asyncio.Task[None]) -> None:
 
 async def startup(app: FastAPI) -> None:
     setup_logging()
+    setup_tracing("orders-service")
     mongo_client, database, redis_client = await connect_databases()
 
     menu_repo = MenuItemRepository(
@@ -46,6 +49,11 @@ async def startup(app: FastAPI) -> None:
     await outbox.ensure_indexes()
     relay = OutboxRelay(outbox=outbox, producer=publisher)
 
+    idempotency = IdempotencyStore(
+        collection=database.get_collection(settings.mongo_collection_idempotency)
+    )
+    await idempotency.ensure_indexes()
+
     state = AppState(
         mongo_client=mongo_client,
         database=database,
@@ -57,6 +65,7 @@ async def startup(app: FastAPI) -> None:
             order_repo=order_repo,
             menu_repo=menu_repo,
             outbox=outbox,
+            idempotency=idempotency,
             mongo_client=mongo_client,
         ),
         outbox_relay=relay,

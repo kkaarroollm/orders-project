@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 from shared.http_metrics import GZipMiddleware, PrometheusMiddleware
+from shared.tracing import instrument_app
 
 from src.lifespan import startup, teardown
 from src.routes import router
@@ -32,6 +33,8 @@ app: FastAPI = FastAPI(
 app.include_router(router)
 
 app.mount("/metrics", make_asgi_app())
+
+instrument_app(app)
 
 app.add_middleware(PrometheusMiddleware)  # ty: ignore[invalid-argument-type]
 app.add_middleware(GZipMiddleware)  # ty: ignore[invalid-argument-type]

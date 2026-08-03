@@ -2,6 +2,8 @@ import logging
 from decimal import Decimal
 
 from pymongo import AsyncMongoClient
+from pymongo.errors import DuplicateKeyError
+from shared.db.idempotency import IdempotencyStore
 from shared.db.outbox import MongoOutbox
 from shared.events.order import (
     OrderCreated,
@@ -30,25 +32,45 @@ class OrderRejectedError(Exception):
         self.message = message
 
 
+class RequestInProgressError(Exception):
+    """An idempotency key is reserved but its response is not stored yet.
+
+    Either another request is mid-flight, or one crashed between committing and
+    recording its response. Replaying is unsafe, so the caller retries later.
+    """
+
+
 class OrderService(TransactionServiceMixin):
     def __init__(
         self,
         order_repo: OrderRepository,
         menu_repo: MenuItemRepository,
         outbox: MongoOutbox,
+        idempotency: IdempotencyStore,
         mongo_client: AsyncMongoClient,
     ) -> None:
         super().__init__(mongo_client)
         self._order_repo = order_repo
         self._menu_repo = menu_repo
         self._outbox = outbox
+        self._idempotency = idempotency
 
     async def get(self, order_id: str) -> OrderSchema | None:
         return await self._order_repo.get_by_id(order_id, session=None)
 
-    async def create_order_with_stock_check(self, order_data: OrderSchema) -> OrderResponse:
+    async def create_order_with_stock_check(
+        self, order_data: OrderSchema, idempotency_key: str | None = None
+    ) -> OrderResponse:
+        if idempotency_key and (replay := await self._replay(idempotency_key)):
+            return replay
+
         try:
             async with self.transaction() as session:
+                if idempotency_key:
+                    # Reserved inside the transaction, so the key is only taken
+                    # if the order it stands for is actually created.
+                    await self._idempotency.reserve(idempotency_key, session)
+
                 total_price = Decimal("0.00")
 
                 for item in order_data.items:
@@ -87,8 +109,25 @@ class OrderService(TransactionServiceMixin):
         except OrderRejectedError as rejected:
             logging.info("Rejected order: %s", rejected.message)
             return OrderResponse(order=order_data, success=False, message=rejected.message)
+        except DuplicateKeyError:
+            # A concurrent request won the key; return whatever it produced.
+            if idempotency_key and (replay := await self._replay(idempotency_key)):
+                return replay
+            raise RequestInProgressError from None
 
-        return OrderResponse(order=order_data, success=True)
+        response = OrderResponse(order=order_data, success=True)
+        if idempotency_key:
+            await self._idempotency.complete(idempotency_key, response.model_dump(mode="json"))
+        return response
+
+    async def _replay(self, idempotency_key: str) -> OrderResponse | None:
+        record = await self._idempotency.find(idempotency_key)
+        if record is None:
+            return None
+        if record.get("response") is None:
+            raise RequestInProgressError
+        logging.info("Replaying stored response for idempotency key %s", idempotency_key)
+        return OrderResponse.model_validate(record["response"])
 
     async def update_order_status(self, order_id: str, new_status: OrderStatus) -> OrderResponse:
         async with self.transaction() as session:

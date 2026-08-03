@@ -71,7 +71,8 @@ Events are versioned classes in `shared/events`; the class owns its stream and w
 | Duplicate deliveries | Inbox: event id recorded in the same transaction as the write |
 | Poison messages | 3 retries, then the `dead-letters` stream |
 | Dead consumers | Readiness fails and the process exits, so Kubernetes restarts it |
-| Unbounded growth | `MAXLEN` on every stream, TTL on inbox records |
+| Unbounded growth | `MAXLEN` on every stream, TTL on inbox and idempotency records |
+| Duplicate orders | `Idempotency-Key`: retry returns the original result |
 
 ## Quick Start
 
