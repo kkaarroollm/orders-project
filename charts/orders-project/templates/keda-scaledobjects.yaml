@@ -1,0 +1,46 @@
+{{- if .Values.keda.enabled }}
+{{- /*
+Scale consumers on stream lag, not CPU. A backlog is the signal that matters:
+these services are IO-bound, so they can be far behind while barely using a
+core. Requires KEDA to be installed in the cluster.
+*/ -}}
+{{- range .Values.keda.consumers }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ $.Values.global.fullnameOverride }}-{{ .name }}-scaler
+  namespace: {{ $.Release.Namespace }}
+spec:
+  scaleTargetRef:
+    name: {{ $.Values.global.fullnameOverride }}-{{ .name }}
+  minReplicaCount: {{ .minReplicas }}
+  maxReplicaCount: {{ .maxReplicas }}
+  pollingInterval: 15
+  # Long enough that a burst does not immediately scale back down mid-backlog.
+  cooldownPeriod: 120
+  triggers:
+    {{- range .streams }}
+    - type: redis-streams
+      metadata:
+        address: {{ $.Values.global.fullnameOverride }}-redis-svc:6379
+        stream: {{ .stream }}
+        consumerGroup: {{ .group }}
+        lagCount: {{ .lagCount | quote }}
+        activationLagCount: {{ .activationLagCount | default "1" | quote }}
+      authenticationRef:
+        name: {{ $.Values.global.fullnameOverride }}-redis-auth-trigger
+    {{- end }}
+{{- end }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ .Values.global.fullnameOverride }}-redis-auth-trigger
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretTargetRef:
+    - parameter: password
+      name: {{ .Values.global.fullnameOverride }}-redis-auth
+      key: REDIS_PASSWORD
+{{- end }}

@@ -8,6 +8,7 @@ from shared.db.outbox import MongoOutbox, OutboxRelay
 from shared.logging import setup_logging
 from shared.redis.event_bus import terminate_on_failure
 from shared.redis.publisher import StreamProducer
+from shared.tracing import setup_tracing
 
 from src.databases import close_databases, connect_databases
 from src.repositories.menu_item_repo import MenuItemRepository
@@ -32,6 +33,7 @@ def _on_relay_stopped(task: asyncio.Task[None]) -> None:
 
 async def startup(app: FastAPI) -> None:
     setup_logging()
+    setup_tracing("orders-service")
     mongo_client, database, redis_client = await connect_databases()
 
     menu_repo = MenuItemRepository(

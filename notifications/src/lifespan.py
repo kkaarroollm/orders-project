@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from shared.logging import setup_logging
 from shared.redis.connection import connect_redis
 from shared.redis.publisher import StreamProducer
+from shared.tracing import setup_tracing
 
 from src.repository import NotificationRepository
 from src.service import NotificationService, StatusPushFanout
@@ -16,6 +17,7 @@ from src.streams import setup_streams, stop_streams
 
 async def startup(app: FastAPI) -> None:
     setup_logging()
+    setup_tracing("notifications-service")
     redis_client = await connect_redis(settings.redis_url)
 
     notification_repo = NotificationRepository(redis_client)

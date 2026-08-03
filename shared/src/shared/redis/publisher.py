@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from redis.asyncio import Redis
 
 from shared.events.base import DomainEvent
+from shared.tracing import current_traceparent
 
 TMessage = TypeVar("TMessage", bound=BaseModel)
 
@@ -59,6 +60,7 @@ class StreamProducer(Generic[TMessage]):
             "event_type": event_type,
             "correlation_id": correlation_id,
             "source": self._source,
+            "traceparent": current_traceparent(),
             "timestamp": time.time(),
             "payload": data,
         }
