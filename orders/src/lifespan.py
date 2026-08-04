@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from fastapi import FastAPI
+from pymongo import ReadPreference
 from shared.db.idempotency import IdempotencyStore
 from shared.db.outbox import MongoOutbox, OutboxRelay
 from shared.logging import setup_logging
@@ -10,6 +11,7 @@ from shared.redis.event_bus import terminate_on_failure
 from shared.redis.publisher import StreamProducer
 from shared.tracing import setup_tracing
 
+from src.cache import MenuCache
 from src.databases import close_databases, connect_databases
 from src.repositories.menu_item_repo import MenuItemRepository
 from src.repositories.order_repository import OrderRepository
@@ -43,6 +45,24 @@ async def startup(app: FastAPI) -> None:
         collection=database.get_collection(settings.mongo_collection_orders),
     )
 
+    # Separate handles for the read paths. A transaction must read from the
+    # primary, so the read preference cannot simply be set on the collections
+    # the write paths already use.
+    menu_read_repo = MenuItemRepository(
+        collection=database.get_collection(
+            settings.mongo_collection_menu_items,
+            read_preference=ReadPreference.SECONDARY_PREFERRED,
+        ),
+    )
+    order_read_repo = OrderRepository(
+        collection=database.get_collection(
+            settings.mongo_collection_orders,
+            read_preference=ReadPreference.SECONDARY_PREFERRED,
+        ),
+    )
+
+    menu_cache = MenuCache(redis_client)
+
     publisher: StreamProducer[Any] = StreamProducer(redis_client, source="orders-service")
 
     outbox = MongoOutbox(collection=database.get_collection(settings.mongo_collection_outbox))
@@ -60,12 +80,19 @@ async def startup(app: FastAPI) -> None:
         redis_client=redis_client,
         menu_repository=menu_repo,
         order_repository=order_repo,
-        menu_service=MenuService(repo=menu_repo, mongo_client=mongo_client),
+        menu_service=MenuService(
+            repo=menu_repo,
+            read_repo=menu_read_repo,
+            cache=menu_cache,
+            mongo_client=mongo_client,
+        ),
         order_service=OrderService(
             order_repo=order_repo,
+            order_read_repo=order_read_repo,
             menu_repo=menu_repo,
             outbox=outbox,
             idempotency=idempotency,
+            menu_cache=menu_cache,
             mongo_client=mongo_client,
         ),
         outbox_relay=relay,

@@ -1,4 +1,6 @@
-replicaCount: 1
+# Must stay at 3: init-rs-job initiates rs0 with three members, and a
+# three-member config needs two of them up to elect a primary.
+replicaCount: 3
 
 image:
   repository: mongo

@@ -27,6 +27,11 @@ def outbox():
 
 
 @pytest.fixture
+def menu_cache():
+    return AsyncMock()
+
+
+@pytest.fixture
 def idempotency():
     store = AsyncMock()
     store.find.return_value = None
@@ -46,12 +51,14 @@ def mongo_client():
 
 
 @pytest.fixture
-def service(order_repo, menu_repo, outbox, idempotency, mongo_client):
+def service(order_repo, menu_repo, outbox, idempotency, menu_cache, mongo_client):
     return OrderService(
         order_repo=order_repo,
+        order_read_repo=order_repo,
         menu_repo=menu_repo,
         outbox=outbox,
         idempotency=idempotency,
+        menu_cache=menu_cache,
         mongo_client=mongo_client,
     )
 
@@ -185,6 +192,29 @@ async def test_status_event_carries_the_orders_own_simulation_flag(service, orde
     await service.handle_status_update(OrderStatusSimulated(id="order123", status="out_for_delivery"))
 
     assert outbox.add.call_args.args[0].simulation == -1
+
+
+@pytest.mark.asyncio
+async def test_placing_an_order_invalidates_the_menu_cache(service, menu_repo, order_repo, menu_cache):
+    """Stock just moved, so a cached menu would advertise items that are gone."""
+    menu_repo.get_by_id.return_value = MenuItemSchema(
+        name="Burger", price=9.99, category="food", stock=10, id="507f1f77bcf86cd799439011"
+    )
+    menu_repo.decrement_stock.return_value = True
+    order_repo.create.return_value = "order123"
+
+    await service.create_order_with_stock_check(_make_order())
+
+    menu_cache.invalidate.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_rejected_order_leaves_the_cache_alone(service, menu_repo, menu_cache):
+    menu_repo.get_by_id.return_value = None
+
+    await service.create_order_with_stock_check(_make_order())
+
+    menu_cache.invalidate.assert_not_awaited()
 
 
 @pytest.mark.asyncio

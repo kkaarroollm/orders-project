@@ -23,8 +23,20 @@ def mongo_client():
 
 
 @pytest.fixture
-def service(menu_repo, mongo_client):
-    return MenuService(repo=menu_repo, mongo_client=mongo_client)
+def menu_cache():
+    cache = AsyncMock()
+    cache.get.return_value = None  # cold cache by default
+    return cache
+
+
+@pytest.fixture
+def service(menu_repo, menu_cache, mongo_client):
+    return MenuService(
+        repo=menu_repo,
+        read_repo=menu_repo,
+        cache=menu_cache,
+        mongo_client=mongo_client,
+    )
 
 
 def _make_item(**overrides):
@@ -75,3 +87,41 @@ async def test_create_item(service, menu_repo):
     result = await service.create_item(item)
 
     assert result == "newid"
+
+
+@pytest.mark.asyncio
+async def test_list_items_caches_a_cold_read(service, menu_repo, menu_cache):
+    menu_repo.find_many.return_value = [_make_item()]
+
+    items = await service.list_items()
+
+    assert len(items) == 1
+    menu_cache.set.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_list_items_serves_the_cache_without_touching_mongo(service, menu_repo, menu_cache):
+    menu_cache.get.return_value = [_make_item(name="Cached")]
+
+    items = await service.list_items()
+
+    assert items[0].name == "Cached"
+    menu_repo.find_many.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_empty_menu_is_still_a_cache_hit(service, menu_repo, menu_cache):
+    """An empty list is a real cached value, not a miss."""
+    menu_cache.get.return_value = []
+
+    assert await service.list_items() == []
+    menu_repo.find_many.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_creating_an_item_invalidates_the_cache(service, menu_repo, menu_cache):
+    menu_repo.create.return_value = "item123"
+
+    await service.create_item(_make_item())
+
+    menu_cache.invalidate.assert_awaited_once()

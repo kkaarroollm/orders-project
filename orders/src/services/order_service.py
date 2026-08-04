@@ -12,6 +12,7 @@ from shared.events.order import (
     OrderStatusSimulated,
 )
 
+from src.cache import MenuCache
 from src.repositories.menu_item_repo import MenuItemRepository
 from src.repositories.order_repository import OrderRepository
 from src.responses import OrderResponse
@@ -41,22 +42,27 @@ class RequestInProgressError(Exception):
 
 
 class OrderService(TransactionServiceMixin):
-    def __init__(
+    def __init__(  # noqa: PLR0913 — collaborators are injected, not configured
         self,
         order_repo: OrderRepository,
+        order_read_repo: OrderRepository,
         menu_repo: MenuItemRepository,
         outbox: MongoOutbox,
         idempotency: IdempotencyStore,
+        menu_cache: MenuCache,
         mongo_client: AsyncMongoClient,
     ) -> None:
         super().__init__(mongo_client)
         self._order_repo = order_repo
+        # Reads may go to a secondary; writes and transactions must not.
+        self._order_read_repo = order_read_repo
         self._menu_repo = menu_repo
         self._outbox = outbox
         self._idempotency = idempotency
+        self._menu_cache = menu_cache
 
     async def get(self, order_id: str) -> OrderSchema | None:
-        return await self._order_repo.get_by_id(order_id, session=None)
+        return await self._order_read_repo.get_by_id(order_id, session=None)
 
     async def create_order_with_stock_check(
         self, order_data: OrderSchema, idempotency_key: str | None = None
@@ -114,6 +120,9 @@ class OrderService(TransactionServiceMixin):
             if idempotency_key and (replay := await self._replay(idempotency_key)):
                 return replay
             raise RequestInProgressError from None
+
+        # Stock just moved, so the cached menu is stale.
+        await self._menu_cache.invalidate()
 
         response = OrderResponse(order=order_data, success=True)
         if idempotency_key:
