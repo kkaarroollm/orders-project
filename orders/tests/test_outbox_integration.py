@@ -56,11 +56,14 @@ async def idempotency(database):
 
 @pytest.fixture
 async def service(database, outbox, idempotency):
+    order_repo = OrderRepository(collection=database["orders"])
     return OrderService(
-        order_repo=OrderRepository(collection=database["orders"]),
+        order_repo=order_repo,
+        order_read_repo=order_repo,
         menu_repo=MenuItemRepository(collection=database["menu_items"]),
         outbox=outbox,
         idempotency=idempotency,
+        menu_cache=AsyncMock(),
         mongo_client=database.client,
     )
 

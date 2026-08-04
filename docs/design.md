@@ -134,8 +134,17 @@ resumes rather than stranding orders.
    RAM. Trimming under a stalled consumer silently drops events, so consumer lag
    is the metric to alert on: every bus reports `stream_group_lag` per stream
    and group, which rises well before trimming starts discarding a backlog.
-2. **MongoDB writes** — a single replica set primary takes every write. Read
-   replicas help reads; write scaling needs sharding.
+2. **MongoDB writes** — a single primary takes every write. `rs0` runs three
+   members, so reads scale out (`GET /orders/{id}` and the menu use
+   `secondaryPreferred`, and the menu is cached in Redis on top), but write
+   scaling would need sharding.
+
+   Sharding is not the next step, and would cost more than it returns. An order
+   writes `menu_items`, `orders` and `outbox` in **one transaction**; sharding
+   splits those across shards and turns every order into a distributed
+   transaction. Keeping it single-shard would need one shard key across all
+   three, which cannot exist — `menu_items` is keyed by item and `orders` by
+   order. The outbox guarantee is what makes "just shard it later" expensive.
 3. **The stateful edge** — SSE streams are long-lived connections, so
    notifications is bound by file descriptors and memory per client long before
    CPU.
@@ -146,8 +155,8 @@ Honest limitations, rather than a feature list:
 
 - **No authentication.** Any client can create an order. Ordering is the demo.
 - **No payments**, which is exactly why no saga is needed yet.
-- **Menu reads hit MongoDB** on every request. An obvious cache, deliberately not
-  built until there is load to justify invalidation.
+- **The stock-refill CronJob writes MongoDB directly** and emits no event, so
+  the menu cache only converges on its 30-second TTL rather than immediately.
 - **Tracing needs a collector.** Spans are produced and propagate across
   streams, but nothing collects them unless `OTEL_EXPORTER_OTLP_ENDPOINT` points
   somewhere. Correlation IDs in Loki remain the default way to follow an order.
