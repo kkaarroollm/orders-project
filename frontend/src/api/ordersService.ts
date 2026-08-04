@@ -14,10 +14,16 @@ export const fetchMenu = async (): Promise<MenuItem[]> => {
   return response.data as MenuItem[];
 };
 
-export const createOrder = async (order: Order): Promise<OrderResponse> => {
+export const createOrder = async (
+  order: Order,
+  idempotencyKey: string,
+): Promise<OrderResponse> => {
   const response = await axios.post<OrderResponse>(
     `${ORDERS_API_BASE}/orders`,
     order,
+    // Retrying the same attempt returns the original order rather than
+    // placing a second one.
+    { headers: { 'Idempotency-Key': idempotencyKey } },
   );
   return response.data;
 };

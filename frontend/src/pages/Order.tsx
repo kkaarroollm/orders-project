@@ -1,8 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { createOrder } from '@/api/ordersService';
 import { Order, OrderingPerson, OrderResponse } from '@/types';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -30,9 +31,18 @@ const OrderPage = () => {
 
   const [simulationChecked, setSimulationChecked] = useState(false);
 
+  // Held across retries of one checkout attempt, so a lost response or a
+  // dropped connection cannot turn into a second order. Cleared once an order
+  // is actually placed, so the next checkout gets a fresh key.
+  const idempotencyKey = useRef<string | null>(null);
+
   const mutation = useMutation<OrderResponse, Error, Order>({
-    mutationFn: createOrder,
+    mutationFn: (order) => {
+      idempotencyKey.current ??= crypto.randomUUID();
+      return createOrder(order, idempotencyKey.current);
+    },
     onSuccess: async (data) => {
+      idempotencyKey.current = null;
       const orderId = data.order._id;
       if (!orderId) {
         alert('Order placed, but order ID is missing in the response.');
@@ -43,6 +53,12 @@ const OrderPage = () => {
       await navigate({ to: '/tracking/' + orderId });
     },
     onError: (error: unknown) => {
+      // 409 means the previous attempt with this key is still in flight, so
+      // the key is kept and retrying resolves to that attempt's result.
+      if (isAxiosError(error) && error.response?.status === 409) {
+        alert('That order is still being placed. Try again in a moment.');
+        return;
+      }
       if (error instanceof Error) {
         alert(`Failed to place order: ${error.message}`);
       } else {
