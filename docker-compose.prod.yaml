@@ -1,0 +1,282 @@
+# Production stack: pulls released images, builds nothing, mounts no source.
+#
+#   TAG=0.3.0 docker compose -f docker-compose.prod.yaml pull
+#   TAG=0.3.0 docker compose -f docker-compose.prod.yaml up -d
+#
+# Only nginx publishes a port, and only on the loopback interface, so a
+# reverse proxy in front (Caddy, Cloudflare Tunnel) is the single way in.
+# Datastores stay on the internal network.
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: unless-stopped
+    command:
+      ['mongod', '--replSet', 'rs0', '--keyFile', '/etc/mongo-keyfile', '--bind_ip_all']
+    healthcheck:
+      test: mongosh --host localhost:27017 --eval 'db.adminCommand("ping")' || exit 1
+      interval: 10s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
+    volumes:
+      - mongo_data:/data/db
+      - ./envs/mongo-keyfile:/etc/mongo-keyfile:ro
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/mongo.env
+    networks:
+      - backend_net
+
+  # Turns the single node into replica set rs0. Without it there are no
+  # transactions and no change streams, so the outbox cannot work.
+  mongo-init-replica:
+    image: mongo:latest
+    container_name: mongo-init-replica
+    restart: 'no'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/mongo.env
+    volumes:
+      - ./scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
+    entrypoint: ['/docker-entrypoint-initdb.d/init-replica.sh']
+    networks:
+      - backend_net
+
+  # Seeds the menu. Without it the menu endpoint returns an empty list.
+  mongo-seed:
+    image: mongo:latest
+    container_name: mongo-seed
+    restart: 'no'
+    depends_on:
+      mongo-init-replica:
+        condition: service_completed_successfully
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/mongo.env
+    volumes:
+      - ./scripts/seed-data.js:/seed-data.js:ro
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        mongosh --host mongo:27017
+        -u "$${MONGO_INITDB_ROOT_USERNAME}"
+        -p "$${MONGO_INITDB_ROOT_PASSWORD}"
+        --authenticationDatabase "$${MONGO_AUTH_DB:-admin}"
+        "$${MONGO_INITDB_DATABASE}"
+        /seed-data.js
+    networks:
+      - backend_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_net
+
+  order-service:
+    image: ghcr.io/kkaarroollm/orders-service:${TAG:-latest}
+    container_name: order-service
+    restart: unless-stopped
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/mongo.env
+      - envs/${DEPLOY_ENV:-prod}/redis.env
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-[]}
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8003/api/v1/health/readiness']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      mongo-init-replica:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_net
+
+  delivery-service:
+    image: ghcr.io/kkaarroollm/delivery-service:${TAG:-latest}
+    container_name: delivery-service
+    restart: unless-stopped
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/mongo.env
+      - envs/${DEPLOY_ENV:-prod}/redis.env
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8001/api/v1/health/readiness']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      mongo-init-replica:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_net
+
+  notifications-service:
+    image: ghcr.io/kkaarroollm/notifications-service:${TAG:-latest}
+    container_name: notifications-service
+    restart: unless-stopped
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/redis.env
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-[]}
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8002/api/v1/health/readiness']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_net
+
+  order-simulator:
+    image: ghcr.io/kkaarroollm/simulator-service:${TAG:-latest}
+    container_name: order-simulator
+    restart: unless-stopped
+    env_file:
+      - envs/${DEPLOY_ENV:-prod}/redis.env
+      - envs/${DEPLOY_ENV:-prod}/simulator.env
+    depends_on:
+      order-service:
+        condition: service_healthy
+      delivery-service:
+        condition: service_healthy
+      notifications-service:
+        condition: service_healthy
+    networks:
+      - backend_net
+
+  frontend:
+    image: ghcr.io/kkaarroollm/frontend-service:${TAG:-latest}
+    container_name: frontend
+    restart: unless-stopped
+    # No published port: nginx reaches it over the internal network.
+    networks:
+      - frontend_net
+      - backend_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    # Loopback only — Caddy or the Cloudflare tunnel terminates the outside.
+    ports:
+      - '127.0.0.1:${HTTP_PORT:-8085}:80'
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      order-service:
+        condition: service_healthy
+      notifications-service:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - backend_net
+      - frontend_net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      # Served under /prometheus/ by nginx, so links must be rewritten.
+      - '--web.external-url=${PUBLIC_URL:-http://localhost}/prometheus/'
+      - '--web.route-prefix=/'
+      - '--storage.tsdb.retention.time=3d'
+      - '--storage.tsdb.retention.size=256MB'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - backend_net
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - backend_net
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - backend_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${GRAFANA_PORT:-3001}:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}
+      # Anonymous read-only access is off by default: turning it on publishes
+      # every dashboard to anyone who finds the URL.
+      - GF_AUTH_ANONYMOUS_ENABLED=${GRAFANA_ANONYMOUS:-false}
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SERVER_ROOT_URL=${PUBLIC_URL:-http://localhost}/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./monitoring/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - backend_net
+
+volumes:
+  mongo_data:
+  redis_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+
+networks:
+  backend_net:
+  frontend_net:
