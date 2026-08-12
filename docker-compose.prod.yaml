@@ -97,7 +97,13 @@ services:
       - DEBUG=false
       - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-[]}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8003/api/v1/health/readiness']
+      # The production stage is a bare python:3.13-slim with no curl in it;
+      # python is the one interpreter guaranteed to be present.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8003/api/v1/health/readiness', timeout=3)"
       interval: 30s
       timeout: 5s
       retries: 5
@@ -121,7 +127,11 @@ services:
       - ENVIRONMENT=PRODUCTION
       - DEBUG=false
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8001/api/v1/health/readiness']
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/v1/health/readiness', timeout=3)"
       interval: 30s
       timeout: 5s
       retries: 5
@@ -145,7 +155,11 @@ services:
       - DEBUG=false
       - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-[]}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8002/api/v1/health/readiness']
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8002/api/v1/health/readiness', timeout=3)"
       interval: 30s
       timeout: 5s
       retries: 5
