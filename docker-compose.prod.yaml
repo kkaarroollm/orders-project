@@ -212,6 +212,12 @@ services:
         condition: service_healthy
       frontend:
         condition: service_started
+      # nginx resolves every upstream host at startup and refuses to boot if
+      # one is missing, so the proxied observability targets must exist first.
+      grafana:
+        condition: service_started
+      prometheus:
+        condition: service_started
     networks:
       - backend_net
       - frontend_net
