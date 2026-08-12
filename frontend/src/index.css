@@ -173,6 +173,95 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
   }
+
+  /* ---------- system flow diagram ---------- */
+  .flow-edge {
+    fill: none;
+    stroke: color-mix(in srgb, var(--foreground) 20%, transparent);
+    stroke-width: 1.5;
+    transition:
+      stroke 0.4s ease,
+      stroke-width 0.4s ease;
+  }
+
+  .flow-edge-dashed {
+    stroke-dasharray: 5 5;
+  }
+
+  .flow-edge-on {
+    stroke: var(--primary);
+    stroke-width: 2.2;
+  }
+
+  /* Only the lit hop animates, so the eye follows one thing at a time. */
+  .flow-edge-live {
+    stroke-dasharray: 8 12;
+    animation: flow-dash 1.1s linear infinite;
+  }
+
+  @keyframes flow-dash {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+
+  .flow-arrow {
+    fill: color-mix(in srgb, var(--foreground) 35%, transparent);
+  }
+
+  .flow-enclosure {
+    fill: none;
+    stroke: color-mix(in srgb, var(--foreground) 15%, transparent);
+    stroke-width: 1.2;
+    stroke-dasharray: 3 5;
+  }
+
+  .flow-node {
+    fill: var(--card);
+    stroke: color-mix(in srgb, var(--foreground) 18%, transparent);
+    stroke-width: 1.4;
+    transition:
+      stroke 0.4s ease,
+      fill 0.4s ease,
+      stroke-width 0.4s ease;
+  }
+
+  .flow-node-on {
+    stroke: var(--primary);
+    stroke-width: 2;
+    fill: color-mix(in srgb, var(--primary) 10%, var(--card));
+  }
+
+  .flow-node-muted {
+    opacity: 0.5;
+  }
+
+  .flow-node-label {
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--foreground);
+    transition: fill 0.4s ease;
+  }
+
+  .flow-node-label-on {
+    fill: var(--primary);
+  }
+
+  .flow-caption {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    fill: var(--muted-foreground);
+  }
+
+  .flow-primary-dot {
+    fill: var(--primary);
+  }
+
+  .flow-member-dot {
+    fill: none;
+    stroke: var(--muted-foreground);
+    stroke-width: 1.2;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
