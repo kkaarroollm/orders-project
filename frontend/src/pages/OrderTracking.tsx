@@ -5,7 +5,7 @@ export default function OrderTrackingPage() {
   const { order_id } = useParams({ from: '/tracking/$order_id' });
 
   return (
-    <div className="flex justify-center items-center min-h-screen">
+    <div className="mx-auto w-full max-w-3xl">
       <OrderTracker orderId={order_id} />
     </div>
   );
