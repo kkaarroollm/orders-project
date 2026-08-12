@@ -25,7 +25,10 @@ class PrometheusMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope.get("path") == "/metrics":
+        # The metrics app is mounted at /metrics, so it is actually served from
+        # /metrics/. Matching the prefix keeps scrapes out of the RED metrics
+        # they are meant to report on.
+        if scope["type"] != "http" or scope.get("path", "").startswith("/metrics"):
             await self.app(scope, receive, send)
             return
 
