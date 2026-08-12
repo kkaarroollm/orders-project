@@ -8,7 +8,19 @@ interface Tool {
   credentials?: string;
 }
 
-const groups: Array<{ heading: string; blurb: string; tools: Tool[] }> = [
+interface ToolGroup {
+  heading: string;
+  blurb: string;
+  tools: Tool[];
+  /** Direct service ports only resolve for someone sitting at the machine. */
+  localOnly?: boolean;
+}
+
+const isLocal = ['localhost', '127.0.0.1'].includes(
+  typeof window === 'undefined' ? '' : window.location.hostname,
+);
+
+const groups: ToolGroup[] = [
   {
     heading: 'Dashboards',
     blurb:
@@ -48,8 +60,9 @@ const groups: Array<{ heading: string; blurb: string; tools: Tool[] }> = [
   },
   {
     heading: 'Service APIs',
+    localOnly: true,
     blurb:
-      'OpenAPI for each service. These are direct ports, so they only resolve when the stack runs locally.',
+      'OpenAPI for each service, on its own port. Production builds serve no schema at all, so these only exist when the stack runs locally.',
     tools: [
       {
         title: 'Orders',
@@ -115,11 +128,23 @@ const DevTools = () => (
             {group.blurb}
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {group.tools.map((tool) => (
-            <ToolCard key={tool.title} tool={tool} />
-          ))}
-        </div>
+
+        {group.localOnly && !isLocal ? (
+          <p className="surface-card p-5 text-sm text-muted-foreground">
+            Not reachable from here — these point at service ports on the
+            machine running the stack. Clone the repo and run{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.75rem]">
+              docker compose up
+            </code>{' '}
+            to browse them.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {group.tools.map((tool) => (
+              <ToolCard key={tool.title} tool={tool} />
+            ))}
+          </div>
+        )}
       </section>
     ))}
   </div>
