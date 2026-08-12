@@ -3,80 +3,108 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Structure follows DESIGN.md — warm canvas, pill buttons, 12px cards,
+ * layered whisper shadows, tight tracking. The palette is this project's
+ * override: a four-tier red system replacing the four greens, each tier
+ * keeping the surface role the original assigned to it.
+ *
+ * Brand red is warm brick; error red is deliberately cooler and more
+ * saturated so a failure never reads as brand chrome, and it is always paired
+ * with an icon and a tint rather than relying on hue alone.
+ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem; /* 12px card radius */
+
+  /* canvas & surfaces */
+  --background: #f3f1ed; /* warm neutral canvas, never pure white */
+  --foreground: rgba(0, 0, 0, 0.87); /* never pure black */
+  --card: #ffffff;
+  --card-foreground: rgba(0, 0, 0, 0.87);
+  --popover: #faf9f7;
+  --popover-foreground: rgba(0, 0, 0, 0.87);
+
+  /* four-tier red system, each with its own role */
+  --brand: #8a1e1e; /* headings */
+  --primary: #af2318; /* filled CTAs, floating button */
+  --primary-foreground: #ffffff;
+  --deep: #3a1210; /* bands, footer, dark canvas */
+  --uplift: #6e2a22; /* decorative */
+  --brand-light: #f7deda; /* light washes and tints */
+
+  --secondary: #ebe7e2;
+  --secondary-foreground: rgba(0, 0, 0, 0.87);
+  --muted: #f8f7f5;
+  --muted-foreground: rgba(0, 0, 0, 0.58);
+  --accent: #f7deda;
+  --accent-foreground: #8a1e1e;
+
+  /* semantic — green is now free to mean only "success" */
+  --destructive: #c21a3f;
+  --warning: #d9822b;
+  --success: #2e7d52;
+
+  --border: rgba(0, 0, 0, 0.12);
+  --input: rgba(0, 0, 0, 0.24);
+  --ring: #af2318;
+
+  /* layered whisper-soft elevation, never a single heavy shadow */
+  --shadow-card:
+    0 0 0.5px 0 rgba(0, 0, 0, 0.14), 0 1px 1px 0 rgba(0, 0, 0, 0.24);
+  --shadow-nav:
+    0 1px 3px rgba(0, 0, 0, 0.1), 0 2px 2px rgba(0, 0, 0, 0.06),
+    0 0 2px rgba(0, 0, 0, 0.07);
+  --shadow-float: 0 0 6px rgba(0, 0, 0, 0.24), 0 8px 12px rgba(0, 0, 0, 0.14);
+  --shadow-float-active: 0 0 6px rgba(0, 0, 0, 0.24), 0 8px 12px rgba(0, 0, 0, 0);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #2a100e; /* the deep tier carries the whole page */
+  --foreground: #ffffff;
+  --card: #3a1815;
+  --card-foreground: #ffffff;
+  --popover: #3a1815;
+  --popover-foreground: #ffffff;
+
+  --brand: #ffffff;
+  /* Inverted CTA rule: on a deep brand surface the button is white with
+     brand-coloured text, not a red pill on red. */
+  --primary: #ffffff;
+  --primary-foreground: #af2318;
+  --deep: #1e0a09;
+  --uplift: #6e2a22;
+  --brand-light: #f7deda;
+
+  --secondary: #4a211c;
+  --secondary-foreground: #ffffff;
+  --muted: #4a211c;
+  --muted-foreground: rgba(255, 255, 255, 0.7);
+  --accent: #4a211c;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ffb4a9;
+  --warning: #f5b461;
+  --success: #7fd1a3;
+
+  --border: rgba(255, 255, 255, 0.16);
+  --input: rgba(255, 255, 255, 0.32);
+  --ring: #ffffff;
+
+  --shadow-card:
+    0 0 0.5px 0 rgba(0, 0, 0, 0.3), 0 1px 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-nav:
+    0 1px 3px rgba(0, 0, 0, 0.3), 0 2px 2px rgba(0, 0, 0, 0.2),
+    0 0 2px rgba(0, 0, 0, 0.2);
+  --shadow-float: 0 0 6px rgba(0, 0, 0, 0.4), 0 8px 12px rgba(0, 0, 0, 0.3);
+  --shadow-float-active: 0 0 6px rgba(0, 0, 0, 0.4), 0 8px 12px rgba(0, 0, 0, 0);
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: var(--radius);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -92,29 +120,66 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-brand: var(--brand);
+  --color-deep: var(--deep);
+  --color-uplift: var(--uplift);
+  --color-brand-light: var(--brand-light);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-nav: var(--shadow-nav);
+  --shadow-float: var(--shadow-float);
+
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    /* tight tracking is load-bearing across the whole system */
+    letter-spacing: -0.01em;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  .label {
+    @apply text-[0.75rem] font-semibold uppercase text-muted-foreground;
+    letter-spacing: 0.15em;
+  }
+
+  .numeric {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .surface-card {
+    background-color: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

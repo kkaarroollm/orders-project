@@ -1,44 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useContext } from 'react';
+import { CartContext, type CartContextValue } from '@/store/cart-context';
 
-type Cart = { [itemId: string]: { quantity: number; price: number } };
-
-export const useCart = () => {
-  const [cart, setCart] = useState<Cart>(() => {
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : {};
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
-
-  const updateCart = (
-    itemId: string,
-    quantity: number,
-    stock: number,
-    price: number,
-  ) => {
-    if (!itemId) return;
-
-    const safeQuantity = Math.min(quantity, stock);
-
-    setCart((prevCart) => {
-      const newCart = { ...prevCart };
-
-      if (safeQuantity > 0) {
-        newCart[itemId] = { quantity: safeQuantity, price };
-      } else {
-        delete newCart[itemId];
-      }
-
-      return newCart;
-    });
-  };
-
-  const clearCart = () => {
-    setCart({});
-    localStorage.removeItem('cart');
-  };
-
-  return { cart, updateCart, clearCart };
+export const useCart = (): CartContextValue => {
+  const ctx = useContext(CartContext);
+  if (!ctx) {
+    throw new Error('useCart must be used inside a CartProvider');
+  }
+  return ctx;
 };
+
+export type { Cart, CartLine } from '@/store/cart-context';

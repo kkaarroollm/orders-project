@@ -1,9 +1,16 @@
-import React, { JSX } from 'react';
-import { useOrderTracking } from '@/hooks/useOrderTracking';
-import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { CheckCircle, Truck, Timer, Package } from 'lucide-react';
+import {
+  Check,
+  ChefHat,
+  PackageCheck,
+  Truck,
+  Bike,
+  Warehouse,
+  type LucideIcon,
+} from 'lucide-react';
+import { useOrderTracking } from '@/hooks/useOrderTracking';
 import { OrderStatus } from '@/types';
+import { cn } from '@/lib/utils';
 
 const statuses: OrderStatus[] = [
   OrderStatus.CONFIRMED,
@@ -14,120 +21,173 @@ const statuses: OrderStatus[] = [
   OrderStatus.DELIVERED,
 ];
 
-const statusIcons: Record<OrderStatus, JSX.Element> = {
-  [OrderStatus.CONFIRMED]: <CheckCircle className="h-6 w-6" />,
-  [OrderStatus.PREPARING]: <Timer className="h-6 w-6" />,
-  [OrderStatus.OUT_FOR_DELIVERY]: <Truck className="h-6 w-6" />,
-  [OrderStatus.WAITING_FOR_PICKUP]: <Timer className="h-6 w-6" />,
-  [OrderStatus.ON_THE_WAY]: <Truck className="h-6 w-6" />,
-  [OrderStatus.DELIVERED]: <Package className="h-6 w-6" />,
+const statusIcons: Record<OrderStatus, LucideIcon> = {
+  [OrderStatus.CONFIRMED]: Check,
+  [OrderStatus.PREPARING]: ChefHat,
+  [OrderStatus.OUT_FOR_DELIVERY]: Warehouse,
+  [OrderStatus.WAITING_FOR_PICKUP]: Truck,
+  [OrderStatus.ON_THE_WAY]: Bike,
+  [OrderStatus.DELIVERED]: PackageCheck,
 };
 
 const timelineLabels: Record<OrderStatus, string> = {
   [OrderStatus.CONFIRMED]: 'Confirmed',
   [OrderStatus.PREPARING]: 'Preparing',
-  [OrderStatus.OUT_FOR_DELIVERY]: 'Out for Delivery',
+  [OrderStatus.OUT_FOR_DELIVERY]: 'Out for delivery',
   [OrderStatus.WAITING_FOR_PICKUP]: 'Pickup',
-  [OrderStatus.ON_THE_WAY]: 'On The Way',
+  [OrderStatus.ON_THE_WAY]: 'On the way',
   [OrderStatus.DELIVERED]: 'Delivered',
 };
 
 const statusMessages: Record<OrderStatus, string> = {
-  [OrderStatus.CONFIRMED]:
-    'Your order has been confirmed and is now being processed.',
-  [OrderStatus.PREPARING]:
-    'We are preparing your order. It will be ready for shipment shortly.',
-  [OrderStatus.OUT_FOR_DELIVERY]:
-    'Your order is out for delivery. Get ready to receive it!',
-  [OrderStatus.WAITING_FOR_PICKUP]:
-    'Your order is waiting for pickup. The courier will collect it soon.',
-  [OrderStatus.ON_THE_WAY]: 'Your order is on the way to your location.',
-  [OrderStatus.DELIVERED]:
-    'Your order has been delivered. Enjoy your purchase!',
+  [OrderStatus.CONFIRMED]: 'The order is confirmed and queued for the kitchen.',
+  [OrderStatus.PREPARING]: 'It is being prepared. Shipment follows shortly.',
+  [OrderStatus.OUT_FOR_DELIVERY]: 'It has left the kitchen for the depot.',
+  [OrderStatus.WAITING_FOR_PICKUP]: 'Waiting for a courier to collect it.',
+  [OrderStatus.ON_THE_WAY]: 'A courier is on the way to your address.',
+  [OrderStatus.DELIVERED]: 'Delivered. Enjoy it.',
 };
 
-const statusVariants = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
-};
+const ConnectionPill = ({ connected }: { connected: boolean }) => (
+  <span className="flex items-center gap-1.5">
+    <span className="relative flex h-1.5 w-1.5">
+      {connected && (
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
+      )}
+      <span
+        className={cn(
+          'relative inline-flex h-1.5 w-1.5 rounded-full',
+          connected ? 'bg-success' : 'bg-muted-foreground',
+        )}
+      />
+    </span>
+    <span className="label">{connected ? 'SSE live' : 'Reconnecting'}</span>
+  </span>
+);
+
+const clockTime = (ms: number) =>
+  new Date(ms).toLocaleTimeString('en-GB', { hour12: false });
 
 export default function OrderTracker({ orderId }: { orderId: string }) {
-  const { status: currentStatus, isConnected } = useOrderTracking(orderId);
+  const {
+    status: currentStatus,
+    events,
+    isConnected,
+  } = useOrderTracking(orderId);
 
-  if (!currentStatus) {
-    return (
-      <Card className="p-6 space-y-4 dark:bg-gray-800">
-        <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
-          📦 Order Tracking
-        </h1>
-        <p className="text-gray-500 text-center">
-          {isConnected ? 'Loading order status...' : 'Connecting...'}
-        </p>
-      </Card>
-    );
-  }
-
-  const currentIndex = statuses.indexOf(currentStatus);
+  const currentIndex = currentStatus ? statuses.indexOf(currentStatus) : -1;
+  const progress =
+    currentIndex < 0 ? 0 : (currentIndex / (statuses.length - 1)) * 100;
+  const CurrentIcon = currentStatus ? statusIcons[currentStatus] : null;
 
   return (
-    <Card className="p-6 space-y-8 dark:bg-gray-800">
-      <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
-        📦 Order Tracking
-      </h1>
-
-      <div className="flex items-center justify-center space-x-6">
-        {statuses.map((status, index) => {
-          const isActive = index <= currentIndex;
-          return (
-            <div key={status} className="flex flex-col items-center">
-              <div
-                className={`rounded-full p-2 
-                  ${
-                    isActive
-                      ? 'bg-blue-500 dark:bg-blue-600'
-                      : 'bg-gray-300 dark:bg-gray-700'
-                  }
-                `}
-              >
-                {React.cloneElement(statusIcons[status], {
-                  className: isActive
-                    ? 'h-6 w-6 text-white'
-                    : 'h-6 w-6 text-gray-600 dark:text-gray-300',
-                })}
-              </div>
-
-              <span
-                className={`mt-1 text-xs 
-                  ${
-                    isActive
-                      ? 'text-blue-500 dark:text-blue-400 font-semibold'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }
-                `}
-              >
-                {timelineLabels[status]}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <motion.div
-        key={currentStatus}
-        initial="hidden"
-        animate="visible"
-        variants={statusVariants}
-        className="flex flex-col items-center space-y-3"
-      >
-        <div className="rounded-full p-4 bg-blue-500 dark:bg-blue-600">
-          {React.cloneElement(statusIcons[currentStatus], {
-            className: 'h-10 w-10 text-white',
-          })}
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-2">
+          <p className="label">Tracking</p>
+          <h1 className="text-[2.8rem] font-semibold leading-[1.2] text-brand">
+            {currentStatus
+              ? timelineLabels[currentStatus]
+              : 'Waiting for the first event'}
+          </h1>
+          <p className="numeric text-sm text-muted-foreground">{orderId}</p>
         </div>
-        <p className="text-base text-center text-gray-700 dark:text-gray-200">
-          {statusMessages[currentStatus]}
-        </p>
-      </motion.div>
-    </Card>
+        <ConnectionPill connected={isConnected} />
+      </header>
+
+      <section className="surface-card p-6 sm:p-7">
+        {/* progress rail */}
+        <div className="relative mb-6 h-0.5 w-full bg-border">
+          <motion.div
+            className="absolute inset-y-0 left-0 bg-primary"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          />
+        </div>
+
+        <ol className="grid grid-cols-3 gap-y-6 sm:grid-cols-6">
+          {statuses.map((status, index) => {
+            const Icon = statusIcons[status];
+            const reached = index <= currentIndex;
+            const isCurrent = index === currentIndex;
+
+            return (
+              <li
+                key={status}
+                className="flex flex-col items-center gap-2 text-center"
+              >
+                <span
+                  className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-full border transition-colors',
+                    reached
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-muted text-muted-foreground',
+                    isCurrent &&
+                      'ring-2 ring-primary/30 ring-offset-2 ring-offset-card',
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span
+                  className={cn(
+                    'text-xs leading-tight',
+                    reached ? 'text-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  {timelineLabels[status]}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      {currentStatus && CurrentIcon ? (
+        <motion.section
+          key={currentStatus}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="surface-card flex items-center gap-4 p-6"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <CurrentIcon className="h-5 w-5" />
+          </span>
+          <p className="text-sm">{statusMessages[currentStatus]}</p>
+        </motion.section>
+      ) : (
+        <section className="surface-card p-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            {isConnected
+              ? 'Connected. Waiting for the first status to be pushed.'
+              : 'Opening the event stream…'}
+          </p>
+        </section>
+      )}
+
+      {events.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="label">Events received</h2>
+          <ul className="surface-card overflow-hidden font-mono text-xs">
+            {events.map((event) => (
+              <li
+                key={`${event.status}-${event.receivedAt}`}
+                className="flex items-center gap-4 border-b border-border px-4 py-2.5 last:border-b-0"
+              >
+                <span className="numeric text-muted-foreground">
+                  {clockTime(event.receivedAt)}
+                </span>
+                <span>{event.status}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            Each line arrived as a server-sent push from the notifications
+            service, not from polling.
+          </p>
+        </section>
+      )}
+    </div>
   );
 }

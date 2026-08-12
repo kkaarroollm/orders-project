@@ -6,3 +6,6 @@ shared/build/
 shared/src/*.egg-info/
 
 docs/_build/
+
+# Local design reference, not part of the repo
+frontend/DESIGN.md
