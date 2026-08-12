@@ -93,7 +93,7 @@ services:
       - envs/${DEPLOY_ENV:-prod}/mongo.env
       - envs/${DEPLOY_ENV:-prod}/redis.env
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=PRODUCTION
       - DEBUG=false
       - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-[]}
     healthcheck:
@@ -118,7 +118,7 @@ services:
       - envs/${DEPLOY_ENV:-prod}/mongo.env
       - envs/${DEPLOY_ENV:-prod}/redis.env
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=PRODUCTION
       - DEBUG=false
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8001/api/v1/health/readiness']
@@ -141,7 +141,7 @@ services:
     env_file:
       - envs/${DEPLOY_ENV:-prod}/redis.env
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=PRODUCTION
       - DEBUG=false
       - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-[]}
     healthcheck:
