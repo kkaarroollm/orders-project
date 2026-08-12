@@ -19,8 +19,8 @@ docker compose up --build
 [localhost](http://localhost) serves the app, [localhost/dev](http://localhost/dev)
 serves Grafana, Prometheus and the API docs.
 
-The [README](https://github.com/kkaarroollm/orders-project#readme) covers the
-workspace layout and day-to-day development. This site covers the design.
+This site covers the design: the constraints it follows from, the delivery
+guarantees, and the limits it runs into.
 
 ```{toctree}
 :maxdepth: 2
