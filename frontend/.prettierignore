@@ -1,0 +1,5 @@
+dist
+node_modules
+
+# Local-only design reference, kept out of the repo
+DESIGN.md
