@@ -1,6 +1,6 @@
 [project]
 name = "orders-project-workspace"
-version = "0.3.1"
+version = "0.3.2"
 description = "Workspace root for all Python services"
 requires-python = ">=3.13"
 dependencies = []
